@@ -76,7 +76,7 @@ const callback = async (req: NextApiRequest, res: NextApiResponse) => {
     console.log('Set-Cookie headers:', res.getHeader('Set-Cookie'));
 
     // リダイレクト
-    res.redirect('/library');
+    res.redirect('/dashboard');
   } catch (error: unknown) {
     console.error('Error retrieving tokens:', error);
 
