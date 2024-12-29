@@ -7,17 +7,17 @@ const Dashboard = () => {
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         <li className="bg-gray-800 text-white rounded-lg shadow-lg p-4 text-center">
           <Link href="/library" className="text-lg font-semibold hover:underline">
-            Your Library
+            お気に入りの曲
           </Link>
         </li>
         <li className="bg-gray-800 text-white rounded-lg shadow-lg p-4 text-center">
           <Link href="/top-tracks" className="text-lg font-semibold hover:underline">
-            Top Tracks
+            最近特に再生されている曲
           </Link>
         </li>
         <li className="bg-gray-800 text-white rounded-lg shadow-lg p-4 text-center">
           <Link href="/playlist" className="text-lg font-semibold hover:underline">
-            Playlists
+            その他のマイプレイリスト
           </Link>
         </li>
       </ul>
