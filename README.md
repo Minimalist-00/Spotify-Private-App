@@ -1,40 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Spotify History App
 
-## Getting Started
+## 概要
+実装した機能としては、ユーザーにAPI経由でライブラリ等のデータ取得のためにログインしてもらい、「ユーザーの『お気に入りの曲』プレイリストに保存されている楽曲の取得」と「過去4週間で特にユーザーが再生した楽曲の取得」と「ユーザー自身が作成したプレイリストの取得」までが実装されています。
 
-First, run the development server:
+これらの機能が実装できたことにより、次のように実装を進めていけると思います。
+1. 取得したユーザーの楽曲データから楽曲ごとの楽曲特徴量を抽出し、そのユーザーの嗜好データを作成する
+**音響特徴量の取得**:
+- 取得した各トラックのIDを使用して、エンドポイント`GET /v1/audio-features/{id}`を呼び出すことで、以下の音響的特徴量を含む情報を取得できます：
+    - **ダンサビリティ** (`danceability`): 楽曲のリズムの取りやすさやビートの強さを0.0から1.0の範囲で示す指標。
+    - **エネルギー** (`energy`): 楽曲の活力や強度を0.0から1.0の範囲で示す指標。
+    - **アコースティック度** (`acousticness`): 楽曲がアコースティックである可能性を0.0から1.0の範囲で示す指標。
+    - **インストゥルメンタル度** (`instrumentalness`): 楽曲がボーカルなしのインストゥルメンタルである可能性を0.0から1.0の範囲で示す指標。
+    - **ライブ感** (`liveness`): 楽曲がライブ録音である可能性を0.0から1.0の範囲で示す指標。
+    - **スピーチ度** (`speechiness`): 楽曲に含まれる話し言葉の割合を0.0から1.0の範囲で示す指標。
+    - **ポジティブ度** (`valence`): 楽曲の感情的なポジティブさを0.0から1.0の範囲で示す指標。
+    - **テンポ** (`tempo`): 楽曲のテンポ（BPM: Beats Per Minute）。
+    - **キー** (`key`): 楽曲の主音を0から11の整数で示す（例: 0=C, 1=C♯/D♭, 2=D）。
+    - **モード** (`mode`): 楽曲がメジャーかマイナーかを示す（1=メジャー、0=マイナー）。
+    - **音量** (`loudness`): 楽曲の全体的な音量をデシベル（dB）で示す。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+2. ユーザーidなどのユーザープロフィールの情報を取得（Spotify APIの`/me`で取得可能）し、嗜好データと組み合わせてDBに保存する
+**データの形として想定される例**
+```json
+{
+  "user_id": "user123",
+  "preferences": {
+    "danceability": 0.8,
+    "energy": 0.7,
+    "valence": 0.9,
+    "tempo": 120
+  }
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+DB側で保存しているユーザーidとSpotify Web API経由でログインして取得するユーザーidが同じであれば、
+OAuthを使ってユーザー認証しなくても、Spotify Web API経由でログインして取得するユーザーidでDBに保存したユーザーを識別してユーザーごとの自己開示度とか受容度とか計算できるのでは？？
+と思っております。
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+---
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## フロントエンド
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 使用技術
+- **React**: UIコンポーネント構築
+- **Next.js**: サーバーサイドレンダリングとルーティング
+- **Tailwind CSS**: デザインとレイアウト
+- **TypeScript**: 型安全なコード記述
 
-## Learn More
+### 各ファイルの実装内容
+#### **`index.tsx`**
+- アプリケーションのエントリーポイント。
+- Spotify認証のための「Login with Spotify」ボタンを表示。
+- ボタンをクリックすると、`/api/auth/login`にリダイレクト&#8203;:contentReference[oaicite:0]{index=0}。
 
-To learn more about Next.js, take a look at the following resources:
+#### **`dashboard.tsx`**
+- アプリのメインダッシュボードページ。
+- 3つの主要なセクションへのリンクをグリッド形式で表示:
+  1. **お気に入りの曲** (`/library`)
+  2. **最近再生されたトップトラック** (`/top-tracks`)
+  3. **ユーザーのプレイリスト** (`/playlist`)
+- 各リンクには簡単な説明とスタイリングを付与&#8203;:contentReference[oaicite:1]{index=1}。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+#### **`library.tsx`**
+- `/api/library`エンドポイントからユーザーの保存済み楽曲を取得。
+- 楽曲情報を以下の形式で表示:
+  - アルバム画像
+  - 曲名
+  - アーティスト名
+  - アルバム名
+- エラー時にはエラーメッセージを表示&#8203;:contentReference[oaicite:2]{index=2}。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### **`playlist.tsx`**
+- `/api/playlists`エンドポイントを使用してプレイリスト一覧を取得。
+- プレイリストをクリックすると、その中のトラック情報を表示。
+- 再帰的に全トラックを取得し、ページネーションに対応。
+- プレイリストとトラック情報をカード形式で表示&#8203;:contentReference[oaicite:3]{index=3}。
 
-## Deploy on Vercel
+#### **`top-tracks.tsx`**
+- `/api/top-tracks`エンドポイントを使用してユーザーのトップトラックを取得。
+- 過去4週間のデータをランキング形式で表示:
+  - 曲名
+  - アーティスト名
+  - アルバム画像
+- トラックのポピュラリティ情報を基にソート&#8203;:contentReference[oaicite:4]{index=4}。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## バックエンド
+
+### 使用技術
+- **Next.js API Routes**: サーバーサイドAPI
+- **Axios**: HTTPリクエスト管理
+- **Spotify Web API**: データ取得
+- **Cookie管理**: ユーザー認証情報の保持
+
+### 各ファイルの実装内容
+#### **`login.ts`**
+- Spotify認証用URLを生成し、認証ページにリダイレクト。
+- 必要なスコープ:
+  - `user-library-read`
+  - `user-top-read`
+  - `playlist-read-private`
+  - `playlist-read-collaborative`
+- 環境変数を利用してクライアントIDやリダイレクトURIを設定【'login.ts'】。
+
+#### **`callback.ts`**
+- Spotify認証後にリダイレクトされるエンドポイント。
+- 認証コードを受け取り、Spotify APIの`/api/token`エンドポイントを利用してアクセストークンとリフレッシュトークンを取得。
+- トークンをCookieに保存し、ユーザーをダッシュボードへリダイレクト【'callback.ts'】。
+
+#### **`refresh.ts`**
+- リフレッシュトークンを使用してアクセストークンを更新。
+- トークンの有効期限を確認し、必要に応じて新しいトークンを取得。
+- アクセストークンをCookieに保存し、クライアントにJSON形式で返却【'refresh.ts'】。
+
+#### **`library.ts`**
+- `/me/tracks`エンドポイントを使用して、ユーザーの保存済み楽曲を取得。
+- ページネーションを処理し、すべての楽曲を取得。
+- 結果をJSON形式で返却【'library.ts'】。
+
+#### **`playlists.ts`**
+- `/me/playlists`エンドポイントを利用して、ユーザーのプレイリスト一覧を取得。
+- 再帰的にすべてのプレイリストを取得。
+- プレイリスト情報をJSON形式で返却【'playlists.ts'】。
+
+#### **`tracks.ts`**
+- `/playlists/{playlistId}/tracks`エンドポイントを利用して、特定プレイリストのトラックを取得。
+- ページネーションに対応し、すべてのトラックを取得【'tracks.ts'】。
+
+#### **`top-tracks.ts`**
+- `/me/top/tracks`エンドポイントを使用してトップトラックを取得。
+- クライアントにランキングデータを返却【'top-tracks.ts'】。
+
+---
+
+## 環境変数
+アプリの動作には以下の環境変数が必要です:
+- `SPOTIFY_CLIENT_ID`: SpotifyクライアントID
+- `SPOTIFY_CLIENT_SECRET`: Spotifyクライアントシークレット
+- `SPOTIFY_REDIRECT_URI`: 認証後のリダイレクトURI
+
+---
