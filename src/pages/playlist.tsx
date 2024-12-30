@@ -27,11 +27,12 @@ const Playlists = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loadingPlaylists, setLoadingPlaylists] = useState<boolean>(false);
+  const [loadingTracks, setLoadingTracks] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchPlaylists = async () => {
-      setLoading(true);
+      setLoadingPlaylists(true);
       try {
         const response = await fetch('/api/playlists');
         if (!response.ok) {
@@ -42,7 +43,7 @@ const Playlists = () => {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
       } finally {
-        setLoading(false);
+        setLoadingPlaylists(false);
       }
     };
 
@@ -50,7 +51,14 @@ const Playlists = () => {
   }, []);
 
   const fetchTracks = async (playlistId: string) => {
-    setLoading(true);
+    if (playlistId === selectedPlaylist) {
+      // 同じプレイリストを再選択した場合、選択解除
+      setSelectedPlaylist(null);
+      setTracks([]);
+      return;
+    }
+    
+    setLoadingTracks(true);
     try {
       setSelectedPlaylist(playlistId);
       const response = await fetch(`/api/playlists/${playlistId}/tracks`);
@@ -66,7 +74,7 @@ const Playlists = () => {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       console.error('Error fetching tracks:', err);
     } finally {
-      setLoading(false);
+      setLoadingTracks(false);
     }
   };
   
@@ -78,7 +86,7 @@ const Playlists = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Your Playlists</h1>
-      {loading && <p className="text-center text-gray-500">Loading...</p>}
+      {loadingPlaylists && <p className="text-center text-gray-500">Loading...</p>}
 
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         {playlists.map((playlist) => (
@@ -105,50 +113,49 @@ const Playlists = () => {
       </ul>
 
       {selectedPlaylist && (
-  <div>
-    <h2 className="text-2xl font-semibold mb-4">Tracks</h2>
-    {loading ? (
-      <p className="text-center text-gray-500">Loading tracks...</p>
-    ) : tracks.length > 0 ? (
-      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {tracks.map((track) => (
-          <li
-            key={track.track.id}
-            className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden"
-          >
-            {/* アルバム画像 */}
-            <div className="relative w-full h-48">
-              <Image
-                src={
-                  track.track.album?.images[0]?.url || '/placeholder.png'
-                }
-                alt={track.track.album?.name || 'No Album'}
-                layout="fill"
-                objectFit="cover"
-              />
-            </div>
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Tracks</h2>
+          {loadingTracks ? (
+            <p className="text-center text-gray-500">Loading tracks...</p>
+          ) : tracks.length > 0 ? (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {tracks.map((track) => (
+                <li
+                  key={track.track.id}
+                  className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden"
+                >
+                  {/* アルバム画像 */}
+                  <div className="relative w-full h-48">
+                    <Image
+                      src={
+                        track.track.album?.images[0]?.url || '/placeholder.png'
+                      }
+                      alt={track.track.album?.name || 'No Album'}
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  </div>
 
-            {/* トラック情報 */}
-            <div className="p-4">
-              <h2 className="text-lg font-semibold truncate">{track.track.name || 'No Title'}</h2>
-              <p className="text-sm text-gray-400">
-                {track.track.artists
-                  ?.map((artist) => artist.name)
-                  .join(', ') || 'Unknown Artist'}
-              </p>
-              <p className="text-sm text-gray-500 italic truncate">
-                {track.track.album?.name || 'No Album'}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
-    ) : (
-      <p className="text-center text-gray-500">No tracks found in this playlist.</p>
-    )}
-  </div>
-)}
-
+                  {/* トラック情報 */}
+                  <div className="p-4">
+                    <h2 className="text-lg font-semibold truncate">{track.track.name || 'No Title'}</h2>
+                    <p className="text-sm text-gray-400">
+                      {track.track.artists
+                        ?.map((artist) => artist.name)
+                        .join(', ') || 'Unknown Artist'}
+                    </p>
+                    <p className="text-sm text-gray-500 italic truncate">
+                      {track.track.album?.name || 'No Album'}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-gray-500">No tracks found in this playlist.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
