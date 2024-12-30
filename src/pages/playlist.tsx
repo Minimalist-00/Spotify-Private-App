@@ -6,7 +6,9 @@ interface SimplifiedPlaylist {
   name: string;
   images: { url: string }[];
   owner: { display_name: string };
-  trackCount: number;
+  tracks: {
+    total: number;
+  }
 }
 
 interface SpotifyTrack {
@@ -106,7 +108,7 @@ const Playlists = () => {
             <div className="p-4">
               <h2 className="text-lg font-semibold truncate">{playlist.name}</h2>
               <p className="text-sm text-gray-400">By: {playlist.owner.display_name}</p>
-              <p className="text-sm text-gray-500 italic truncate">Tracks: {playlist.trackCount}</p>
+              <p className="text-sm text-gray-500 italic truncate">Tracks: {playlist.tracks.total}</p>
             </div>
           </li>
         ))}
