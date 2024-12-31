@@ -15,7 +15,6 @@ interface RecentlyPlayedTrack {
 
 interface SpotifyRecentlyPlayedResponse {
   items: RecentlyPlayedTrack[];
-  cursors?: { after: string };
 }
 
 const recentlyTracksHandler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -80,31 +79,19 @@ const recentlyTracksHandler = async (req: NextApiRequest, res: NextApiResponse) 
   }
 
   try {
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000; // 1週間前のUNIXタイムスタンプ
-    let allTracks: RecentlyPlayedTrack[] = [];
-    let afterCursor: string | undefined = undefined;
+    const response = await axios.get<SpotifyRecentlyPlayedResponse>(
+      'https://api.spotify.com/v1/me/player/recently-played',
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        params: {
+          limit: 50,
+        },
+      }
+    );
 
-    do {
-      const response = await axios.get<SpotifyRecentlyPlayedResponse>(
-        'https://api.spotify.com/v1/me/player/recently-played',
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-          params: {
-            limit: 50,
-            after: oneWeekAgo,
-            ...(afterCursor && { after: afterCursor }), // カーソルを設定
-          },
-        }
-      );
-
-      const data: SpotifyRecentlyPlayedResponse = response.data;
-      allTracks = [...allTracks, ...data.items];
-      afterCursor = data.cursors?.after; // 次のカーソルを取得
-    } while (afterCursor); // カーソルが存在する限りリクエストを続行
-
-    const recentlyPlayed = allTracks.map((item) => ({
+    const recentlyPlayed = response.data.items.map((item) => ({
       id: item.track.id,
       name: item.track.name,
       artists: item.track.artists.map((artist) => artist.name).join(', '),

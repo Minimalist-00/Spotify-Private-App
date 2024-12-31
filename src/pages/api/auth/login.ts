@@ -1,7 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const login = (req: NextApiRequest, res: NextApiResponse) => {
-  const scope = 'user-library-read user-top-read playlist-read-private playlist-read-collaborative user-read-recently-played';
+  const scope = [
+    'user-top-read',
+    'user-read-private',
+    'user-library-read',
+    'playlist-read-private',
+    'playlist-read-collaborative',
+    'user-read-recently-played'
+  ].join(' ');
   const clientId = process.env.SPOTIFY_CLIENT_ID!;
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI!;
 
