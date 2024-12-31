@@ -71,6 +71,13 @@ interface RecentlyPlayedTrack {
     image: string;
   };
   playedAt: string;
+  track: {
+    id: string;
+    name: string;
+    artists: { name: string }[];
+    album: { name: string; images: { url: string }[] };
+  };
+  played_at: string;
 }
 
 interface SpotifyRecentlyPlayedResponse {
