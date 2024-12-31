@@ -58,7 +58,7 @@ const Playlists = () => {
 
       const data: TracksResponse = await response.json();
       // トラックと、失敗したIDを state に保存
-      setTracks(data.tracks || []);
+      setTracks(data.items || []);
       setFailedTrackIds(data.failedTrackIds || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
