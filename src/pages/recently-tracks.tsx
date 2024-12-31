@@ -1,17 +1,6 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-interface RecentlyPlayedTrack {
-  id: string;
-  name: string;
-  artists: string;
-  album: {
-    name: string;
-    image: string;
-  };
-  playedAt: string;
-}
-
 export default function RecentlyTracks() {
   const [tracks, setTracks] = useState<RecentlyPlayedTrack[]>([]);
   const [loading, setLoading] = useState(true);

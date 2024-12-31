@@ -2,50 +2,13 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-/** プレイリスト情報の型 (簡易版) */
-interface SimplifiedPlaylist {
-  id: string;
-  name: string;
-  images: { url: string }[];
-  owner: { display_name: string };
-  tracks: { total: number };
-}
-
-/** サーバーから返るトラック & 特徴量 */
-interface SpotifyTrack {
-  added_at?: string;
-  track: {
-    id: string;
-    is_local?: boolean;
-    type?: string;
-    name: string;
-    album: {
-      name: string;
-      images: { url: string }[];
-    };
-    artists: { name: string }[];
-  };
-  audio_features?: {
-    id: string;
-    danceability: number;
-    energy: number;
-    tempo: number;
-  } | null;
-}
-
-/** サーバーのレスポンス型 */
-interface TracksApiResponse {
-  tracks: SpotifyTrack[];
-  failedTrackIds?: string[];
-}
-
 const Playlists = () => {
   // プレイリスト一覧
-  const [playlists, setPlaylists] = useState<SimplifiedPlaylist[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // 選択中のプレイリストID
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
   // 選択中プレイリストの楽曲一覧 (特徴量付き)
-  const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
   // 取得に失敗したトラック (サーバーから通知された)
   const [failedTrackIds, setFailedTrackIds] = useState<string[]>([]);
   // エラーメッセージ
@@ -93,7 +56,7 @@ const Playlists = () => {
         throw new Error(`Failed to fetch tracks for playlist ${playlistId}`);
       }
 
-      const data: TracksApiResponse = await response.json();
+      const data: TracksResponse = await response.json();
       // トラックと、失敗したIDを state に保存
       setTracks(data.tracks || []);
       setFailedTrackIds(data.failedTrackIds || []);

@@ -2,14 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import cookie from 'cookie';
 
-// Spotifyトークンレスポンスの型定義
-interface SpotifyTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token: string;
-}
-
 const refreshHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
   const refresh_token = cookies.spotify_refresh_token;

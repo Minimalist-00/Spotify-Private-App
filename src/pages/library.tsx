@@ -1,15 +1,8 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string }[] };
-}
-
 const Library = () => {
-  const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,7 +15,7 @@ const Library = () => {
           throw new Error('Failed to fetch library');
         }
         const data = await response.json();
-        setTracks(data.items.map((item: { track: SpotifyTrack }) => item.track));
+        setTracks(data.items.map((item: { track: Track }) => item.track));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
       }

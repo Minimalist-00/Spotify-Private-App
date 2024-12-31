@@ -1,30 +1,6 @@
+// src/pages/api/auth/callback.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-
-// Spotifyトークンレスポンスの型定義
-interface SpotifyTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token: string;
-}
-
-// Axiosエラー型を具体的に定義
-interface AxiosErrorResponse<T = unknown> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
-// Axiosエラー型
-interface AxiosError<T = unknown> extends Error {
-  config: unknown;
-  code?: string;
-  request?: unknown;
-  response?: AxiosErrorResponse<T>;
-  isAxiosError: boolean;
-  toJSON: () => object;
-}
 
 // Axiosエラーを判定する型ガード
 const isAxiosError = <T = unknown>(error: unknown): error is AxiosError<T> => {

@@ -2,21 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import cookie from 'cookie';
 
-// 再生履歴のデータ型定義
-interface RecentlyPlayedTrack {
-  track: {
-    id: string;
-    name: string;
-    artists: { name: string }[];
-    album: { name: string; images: { url: string }[] };
-  };
-  played_at: string;
-}
-
-interface SpotifyRecentlyPlayedResponse {
-  items: RecentlyPlayedTrack[];
-}
-
 const recentlyTracksHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
     if (!cookieHeader) return {};

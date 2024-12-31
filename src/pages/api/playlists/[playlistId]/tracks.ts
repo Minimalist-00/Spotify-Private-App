@@ -3,29 +3,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
-interface SpotifyTrack {
-  track: {
-    id: string;
-    is_local?: boolean; // ローカルトラック判別用
-    type?: string;      // 'track' or 'episode' (podcast) など
-    name: string;
-    album: { name: string; images: { url: string }[] };
-    artists: { name: string }[];
-  };
-}
-
-interface SpotifyPlaylistTracksResponse {
-  items: SpotifyTrack[];
-  next: string | null;
-}
-
-interface AudioFeature {
-  id: string;
-  danceability: number;
-  energy: number;
-  tempo: number;
-}
-
 const tracksHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { playlistId } = req.query;
 
@@ -54,11 +31,11 @@ const tracksHandler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     // --- (1) プレイリストの全トラック取得 ---
-    const tracks: SpotifyTrack[] = [];
+    const tracks: Track[] = [];
     let nextUrl: string | null = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
 
     while (nextUrl) {
-      const response = await axios.get<SpotifyPlaylistTracksResponse>(
+      const response = await axios.get<TracksResponse>(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
         headers: {
           Authorization: `Bearer ${access_token}`,

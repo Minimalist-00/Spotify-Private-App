@@ -3,17 +3,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
-interface SpotifyPlaylist {
-  id: string;
-  name: string;
-  tracks: { total: number };
-}
-
-interface SpotifyPlaylistsResponse {
-  items: SpotifyPlaylist[];
-  next: string | null;
-}
-
 const playlistsHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
     if (!cookieHeader) return {};
@@ -33,11 +22,11 @@ const playlistsHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const playlists: SpotifyPlaylist[] = [];
+    const playlists: Playlist[] = [];
     let nextUrl: string | null = 'https://api.spotify.com/v1/me/playlists';
 
     while (nextUrl) {
-      const response = await axios.get<SpotifyPlaylistsResponse>('https://api.spotify.com/v1/me/playlists', {
+      const response = await axios.get<PlaylistsResponse>('https://api.spotify.com/v1/me/playlists', {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },

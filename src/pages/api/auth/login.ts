@@ -1,3 +1,4 @@
+// src/pages/api/auth/login.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const login = (req: NextApiRequest, res: NextApiResponse) => {

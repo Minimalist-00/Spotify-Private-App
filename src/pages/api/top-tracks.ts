@@ -2,19 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import cookie from 'cookie';
 
-// トップトラックのデータ型定義
-interface TopTrack {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string }[] };
-  popularity: number;
-}
-
-interface SpotifyTopTracksResponse {
-  items: TopTrack[];
-}
-
 const topTracksHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Cookieからアクセストークンを取得
   const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {

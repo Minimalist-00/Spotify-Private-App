@@ -2,24 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import cookie from 'cookie';
 
-// Spotify APIからのレスポンスの型定義
-interface SpotifyTrack {
-  track: {
-    id: string;
-    name: string;
-    album: {
-      name: string;
-      images: { url: string }[];
-    };
-    artists: { name: string }[];
-  };
-}
-
-interface SpotifyApiResponse {
-  items: SpotifyTrack[];
-  total: number;
-}
-
 const libraryHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
     if (!cookieHeader) return {};
@@ -83,13 +65,13 @@ const libraryHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const allTracks: SpotifyTrack[] = [];
+    const allTracks: Track[] = [];
     let offset = 0;
     const limit = 50; // 最大50件ずつ取得
     let total = 0;
 
     do {
-      const response = await axios.get<SpotifyApiResponse>('https://api.spotify.com/v1/me/tracks', {
+      const response = await axios.get<TracksResponse>('https://api.spotify.com/v1/me/tracks', {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
@@ -99,7 +81,7 @@ const libraryHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       });
 
-      const data = response.data; // 型がSpotifyApiResponseとして推論される
+      const data = response.data; // 型がTracksResponseとして推論される
       allTracks.push(...data.items);
       total = data.total;
       offset += limit;
