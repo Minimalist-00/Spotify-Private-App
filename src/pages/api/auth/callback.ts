@@ -1,68 +1,64 @@
 // src/pages/api/auth/callback.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
 
-// Axiosエラーを判定する型ガード
-const isAxiosError = <T = unknown>(error: unknown): error is AxiosError<T> => {
-  return typeof error === 'object' && error !== null && (error as AxiosError<T>).isAxiosError !== undefined;
-};
+export default async function callback(req: NextApiRequest, res: NextApiResponse) {
+  // Spotify から返ってきたクエリパラメータを取得
+  const code = req.query.code as string | undefined; // "code" が無ければ undefined
+  const error = req.query.error as string | undefined; // ユーザーが拒否した場合など
 
-const callback = async (req: NextApiRequest, res: NextApiResponse) => {
-  const code = req.query.code as string;
+  console.log('Authorization code:', code);
+  console.log('Error (if any):', error);
+
+
+  if (error) {
+    // ユーザーが拒否した、あるいはSpotifyからのエラー
+    return res.status(400).json({ error: `Spotify returned error: ${error}` });
+  }
 
   if (!code) {
-    res.status(400).json({ error: 'Authorization code is missing' });
-    return;
+    return res.status(400).json({ error: 'Authorization code is missing' });
   }
 
+  // Token を取りに行く
   try {
-    // Spotify APIにリクエストを送信してアクセストークンを取得
-    const response = await axios.post<SpotifyTokenResponse>(
-      'https://accounts.spotify.com/api/token',
-      new URLSearchParams({
-        code,
-        redirect_uri: process.env.SPOTIFY_REDIRECT_URI!,
+    const tokenUrl = 'https://accounts.spotify.com/api/token';
+
+    // client_id, client_secret を Basic認証ヘッダにセット
+    const clientId = process.env.SPOTIFY_CLIENT_ID!;
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET!;
+    const authHeader = Buffer.from(clientId + ':' + clientSecret).toString('base64');
+
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${authHeader}`,
+      },
+      body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: process.env.SPOTIFY_CLIENT_ID!,
-        client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
-      }).toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
+        code: code,
+        redirect_uri: process.env.SPOTIFY_REDIRECT_URI!
+    })
+    });
 
-    const { access_token, refresh_token, expires_in } = response.data;
-
-    if (!access_token || !refresh_token) {
-      throw new Error('Invalid tokens');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // トークンの有効期限を計算
-    const expiresAt = Date.now() + expires_in * 1000;
+    const data = await response.json();
+    const { access_token, refresh_token, expires_in } = data;
 
-    // Cookie設定
-    res.setHeader('Set-Cookie', [
-      `spotify_access_token=${access_token}; Path=/; HttpOnly; Secure; SameSite=None; Expires=${new Date(expiresAt).toUTCString()}`,
-      `spotify_refresh_token=${refresh_token}; Path=/; HttpOnly; Secure; SameSite=None; Expires=${new Date(expiresAt).toUTCString()}`,
-      `spotify_expires_at=${expiresAt}; Path=/; HttpOnly; Secure; SameSite=None; Expires=${new Date(expiresAt).toUTCString()}`,
-    ]);
+    console.log('Token exchange response:', data);
 
-    console.log('Set-Cookie headers:', res.getHeader('Set-Cookie'));
+    // アクセストークンを使ってSpotify APIにリクエストを送る (3)
+    // ここではアクセストークンを表示するだけ
+    res.send(`Access Token: ${access_token}<br>Refresh Token: ${refresh_token}<br>Expires In: ${expires_in}`);
+    // ここでCookieをセットしてもOK (HttpOnly Cookie にする等)
+    // あるいは、サーバーサイドセッションに保存してもOK
+    // ※ SameSite, Secure, HttpOnly 等の設定は用途に応じて調整してください
 
-    // リダイレクト
-    res.redirect('/dashboard');
-  } catch (error: unknown) {
-    console.error('Error retrieving tokens:', error);
-
-    // Spotify APIのエラーレスポンスをキャッチ
-    if (isAxiosError(error) && error.response) {
-      console.error('Spotify API error response:', error.response.data);
-    }
-
-    res.status(500).json({ error: 'Failed to retrieve access token' });
+  } catch (err) {
+    console.error('Error exchanging code for tokens:', err);
+    return res.status(500).json({ error: 'Failed to exchange code for tokens' });
   }
-};
-
-export default callback;
+}

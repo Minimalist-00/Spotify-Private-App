@@ -2,44 +2,58 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import { getToken } from 'next-auth/jwt';
 
-const playlistsHandler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
-    if (!cookieHeader) return {};
-    return cookieHeader.split(';').reduce((cookies, cookie) => {
-      const [name, ...valueParts] = cookie.trim().split('=');
-      cookies[name] = decodeURIComponent(valueParts.join('='));
-      return cookies;
-    }, {} as Record<string, string>);
-  };
+interface Playlist {
+  id: string;
+  name: string;
+  images: Array<{ url: string }>;
+  tracks: { total: number };
+}
 
-  const cookies = parseCookies(req.headers.cookie);
-  const access_token = cookies.spotify_access_token;
+interface PlaylistsResponse {
+  items: Playlist[];
+  next: string | null;
+}
 
-  if (!access_token) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
+/**
+ * GET /api/playlists
+ */
+export default async function playlistsHandler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
+    // NextAuthのトークン取得
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized (no token)' });
+    }
+
+    const accessToken = token.accessToken as string | undefined;
+    if (!accessToken) {
+      return res.status(401).json({ error: 'No access token in token' });
+    }
+
+    // Spotify API: ユーザーのプレイリストをページング取得
     const playlists: Playlist[] = [];
     let nextUrl: string | null = 'https://api.spotify.com/v1/me/playlists';
 
     while (nextUrl) {
-      const response = await axios.get<PlaylistsResponse>('https://api.spotify.com/v1/me/playlists', {
+      const response = await axios.get<PlaylistsResponse>(
+        'https://api.spotify.com/v1/me/playlists', {
         headers: {
-          Authorization: `Bearer ${access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
+
       playlists.push(...response.data.items);
-      nextUrl = response.data.next;
+      nextUrl = response.data.next; // 次のページのURL or null
     }
 
-    res.status(200).json({ playlists });
+    return res.status(200).json({ playlists });
   } catch (error) {
     console.error('Error fetching playlists:', error);
-    res.status(500).json({ error: 'Failed to fetch playlists' });
+    return res.status(500).json({ error: 'Failed to fetch playlists' });
   }
-};
-
-export default playlistsHandler;
+}

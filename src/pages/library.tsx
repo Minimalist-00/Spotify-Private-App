@@ -1,5 +1,17 @@
+// src/components/Library.tsx (or pages/library.tsx)
+
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+
+interface Track {
+  id: string;
+  name: string;
+  album: {
+    name: string;
+    images: Array<{ url: string }>;
+  };
+  artists: Array<{ name: string }>;
+}
 
 const Library = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -8,6 +20,8 @@ const Library = () => {
   useEffect(() => {
     const fetchLibrary = async () => {
       try {
+        // credentials: 'include' はクッキー送信を有効化
+        // NextAuthのセッションクッキーが送られる
         const response = await fetch('/api/library', {
           credentials: 'include',
         });
@@ -15,9 +29,13 @@ const Library = () => {
           throw new Error('Failed to fetch library');
         }
         const data = await response.json();
-        setTracks(data.items.map((item: { track: Track }) => item.track));
+        setTracks(data.items);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Unknown error occurred');
+        }
       }
     };
 
@@ -38,7 +56,10 @@ const Library = () => {
       </p>
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {tracks.map((track) => (
-          <li key={track.id} className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden">
+          <li
+            key={track.id}
+            className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden"
+          >
             <div className="relative w-full h-48">
               <Image
                 src={track.album.images[0]?.url || '/placeholder.png'}
@@ -52,7 +73,9 @@ const Library = () => {
               <p className="text-sm text-gray-400">
                 {track.artists.map((artist) => artist.name).join(', ')}
               </p>
-              <p className="text-sm text-gray-500 italic truncate">{track.album.name}</p>
+              <p className="text-sm text-gray-500 italic truncate">
+                {track.album.name}
+              </p>
             </div>
           </li>
         ))}

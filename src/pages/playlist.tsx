@@ -1,16 +1,48 @@
 // src/pages/Playlists.tsx
+
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+
+// --- 型定義例: 必要に応じてカスタマイズ ---
+interface Playlist {
+  id: string;
+  name: string;
+  images: Array<{ url: string }>;
+  owner: {
+    display_name: string;
+  };
+  tracks: {
+    total: number;
+  };
+}
+
+interface PlaylistTrack {
+  track: {
+    id: string;
+    name: string;
+    album?: {
+      name?: string;
+      images?: Array<{ url: string }>;
+    };
+    artists?: Array<{ name: string }>;
+  };
+}
+
+interface FetchPlaylistsResponse {
+  playlists: Playlist[];
+}
+
+interface FetchTracksResponse {
+  tracks: PlaylistTrack[];
+}
 
 const Playlists = () => {
   // プレイリスト一覧
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // 選択中のプレイリストID
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
-  // 選択中プレイリストの楽曲一覧 (特徴量付き)
-  const [tracks, setTracks] = useState<Track[]>([]);
-  // 取得に失敗したトラック (サーバーから通知された)
-  const [failedTrackIds, setFailedTrackIds] = useState<string[]>([]);
+  // 選択中プレイリストの楽曲一覧
+  const [tracks, setTracks] = useState<PlaylistTrack[]>([]);
   // エラーメッセージ
   const [error, setError] = useState<string | null>(null);
   // ローディング状態
@@ -26,7 +58,7 @@ const Playlists = () => {
         if (!response.ok) {
           throw new Error('Failed to fetch playlists');
         }
-        const data = await response.json();
+        const data: FetchPlaylistsResponse = await response.json();
         setPlaylists(data.playlists || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -34,17 +66,15 @@ const Playlists = () => {
         setLoadingPlaylists(false);
       }
     };
-
     fetchPlaylists();
   }, []);
 
-  // --- (B) プレイリスト ID をクリックしたときにトラックを取得 ---
+  // --- (B) プレイリストIDをクリックしたときにトラックを取得 ---
   const fetchTracks = async (playlistId: string) => {
-    // 同じプレイリストを再選択した場合は選択解除
+    // 同じプレイリストを再選択した場合は選択解除して一覧を非表示
     if (playlistId === selectedPlaylist) {
       setSelectedPlaylist(null);
       setTracks([]);
-      setFailedTrackIds([]);
       return;
     }
 
@@ -55,11 +85,8 @@ const Playlists = () => {
       if (!response.ok) {
         throw new Error(`Failed to fetch tracks for playlist ${playlistId}`);
       }
-
-      const data: TracksResponse = await response.json();
-      // トラックと、失敗したIDを state に保存
-      setTracks(data.items || []);
-      setFailedTrackIds(data.failedTrackIds || []);
+      const data: FetchTracksResponse = await response.json();
+      setTracks(data.tracks || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       console.error('Error fetching tracks:', err);
@@ -106,7 +133,7 @@ const Playlists = () => {
         ))}
       </ul>
 
-      {/* トラック一覧 (特徴量付き) */}
+      {/* 選択中プレイリストのトラック一覧 */}
       {selectedPlaylist && (
         <div>
           <h2 className="text-2xl font-semibold mb-4">Tracks</h2>
@@ -114,24 +141,10 @@ const Playlists = () => {
             <p className="text-center text-gray-500">Loading tracks...</p>
           ) : (
             <>
-              {/* 取得失敗したトラックがあった場合の通知 */}
-              {failedTrackIds.length > 0 && (
-                <div className="bg-yellow-600 text-white p-3 mb-4 rounded">
-                  以下の {failedTrackIds.length} 曲はローカルトラックまたは取得エラーのため、
-                  音声特徴量を取得できませんでした:
-                  <ul className="list-disc list-inside ml-4 mt-2">
-                    {failedTrackIds.map((tid) => (
-                      <li key={tid}>{tid}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* トラックリスト */}
               {tracks.length > 0 ? (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {tracks.map((item) => {
-                    const { track, audio_features } = item;
+                    const { track } = item;
                     return (
                       <li
                         key={track.id}
@@ -140,7 +153,7 @@ const Playlists = () => {
                         {/* アルバム画像 */}
                         <div className="relative w-full h-48">
                           <Image
-                            src={track.album?.images[0]?.url || '/placeholder.png'}
+                            src={track.album?.images?.[0]?.url || '/placeholder.png'}
                             alt={track.album?.name || 'No Album'}
                             layout="fill"
                             objectFit="cover"
@@ -160,19 +173,6 @@ const Playlists = () => {
                           <p className="text-sm text-gray-500 italic truncate">
                             {track.album?.name || 'No Album'}
                           </p>
-
-                          {/* 特徴量の表示 (例: danceability, energy, tempo) */}
-                          {audio_features ? (
-                            <div className="mt-2 text-sm text-gray-400">
-                              <p>Danceability: {audio_features.danceability}</p>
-                              <p>Energy: {audio_features.energy}</p>
-                              <p>Tempo: {audio_features.tempo}</p>
-                            </div>
-                          ) : (
-                            <p className="mt-2 text-sm text-red-400">
-                              Audio features not available
-                            </p>
-                          )}
                         </div>
                       </li>
                     );

@@ -1,28 +1,31 @@
 // src/pages/api/auth/login.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const login = (req: NextApiRequest, res: NextApiResponse) => {
-  const scope = [
+export default function login(req: NextApiRequest, res: NextApiResponse) {
+  const scopes = [
     'user-top-read',
     'user-read-private',
     'user-library-read',
     'playlist-read-private',
     'playlist-read-collaborative',
-    'user-read-recently-played'
+    'user-read-recently-played',
   ].join(' ');
+
   const clientId = process.env.SPOTIFY_CLIENT_ID!;
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI!;
+  // サーバーサイドコールバック先をフルパス指定するなら、例: 'http://localhost:3000/api/auth/callback'
+  // (Spotify Dashboard でも同じURLを "Redirect URIs" に登録しておく)
 
-  if (!clientId || !redirectUri) {
-    throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_REDIRECT_URI in environment variables');
-  }
+  // 注意: redirectUri と Spotify Dashbord での登録が完全一致していること！
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    scope: scopes,
+    redirect_uri: redirectUri
+  });
+  const authUrl = 'https://accounts.spotify.com/authorize?'+ params.toString();
 
-  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${clientId}&scope=${encodeURIComponent(
-    scope
-  )}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-  res.redirect(authUrl);
-};
-
-
-export default login;
+  console.log('Redirecting to:', authUrl);
+  // サーバーサイドからリダイレクト
+  return res.redirect(authUrl);
+}
