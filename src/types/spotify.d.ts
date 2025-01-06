@@ -6,47 +6,48 @@ interface SpotifyTokenResponse {
   refresh_token: string;
 }
 
-/** プレイリスト情報の型 */
+// --- 型定義: 必要に応じてカスタマイズ ---
 interface Playlist {
   id: string;
   name: string;
-  images: { url: string }[];
-  owner: { display_name: string };
-  tracks: { total: number };
+  images: Array<{ url: string }>;
+  owner: {
+    display_name: string;
+  };
+  tracks: {
+    total: number;
+  };
 }
 
-/** サーバーから返るトラック & 特徴量 */
 interface Track {
-  added_at?: string;
-  track: {
-    id: string;
-    is_local?: boolean;
-    type?: string;
-    name: string;
-    album: {
-      name: string;
-      images: { url: string }[];
-    };
-    artists: { name: string }[];
-  };
   id: string;
   name: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string }[] };
-  audio_features?: {
-    id: string;
-    danceability: number;
-    energy: number;
-    tempo: number;
-  } | null;
+  album: {
+    name: string;
+    images: Array<{ url: string }>;
+  };
+  artists: Array<{ name: string }>;
 }
 
-/** サーバーのレスポンス型 */
-interface TracksResponse {
-  items: Track[];
-  failedTrackIds?: string[];
-  total: number;
-  next: string | null;
+interface PlaylistTrack {
+  track: {
+    id: string;
+    name: string;
+    album?: {
+      name?: string;
+      images?: Array<{ url: string }>;
+    };
+    artists?: Array<{ name: string }>;
+  };
+}
+
+interface PlaylistTrackItem {
+  track: {
+    id: string;
+    name: string;
+    is_local?: boolean;
+    type?: string;  // 例: 'track' / 'episode' / 'local'
+  };
 }
 
 interface PlaylistsResponse {
@@ -54,11 +55,22 @@ interface PlaylistsResponse {
   next: string | null;
 }
 
-interface AudioFeature {
-  id: string;
-  danceability: number;
-  energy: number;
-  tempo: number;
+interface TracksResponse {
+  items: PlaylistTrackItem[];
+  next: string | null;
+}
+
+interface LibraryTracksResponse {
+  items: Array<{ track: Track }>;
+  total: number;
+}
+
+interface FetchPlaylistsResponse {
+  playlists: Playlist[];
+}
+
+interface FetchTracksResponse {
+  tracks: PlaylistTrack[];
 }
 
 // 再生履歴のデータ型定義
@@ -94,5 +106,5 @@ interface TopTrack {
 }
 
 interface SpotifyTopTracksResponse {
-  items: TopTrack[];
+  items: Array< { TopTrack } >;
 }

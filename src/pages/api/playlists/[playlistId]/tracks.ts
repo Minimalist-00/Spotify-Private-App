@@ -4,21 +4,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { getToken } from 'next-auth/jwt';
 
-// プレイリストのトラック型定義例 (必要に応じて拡張してください)
-interface PlaylistTrackItem {
-  track: {
-    id: string;
-    name: string;
-    is_local?: boolean;
-    type?: string;  // 例: 'track' / 'episode' / 'local'
-  };
-}
-
-interface TracksResponse {
-  items: PlaylistTrackItem[];
-  next: string | null;
-}
-
 /**
  * GET /api/playlists/[playlistId]/tracks
  *

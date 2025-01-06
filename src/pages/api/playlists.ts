@@ -4,18 +4,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { getToken } from 'next-auth/jwt';
 
-interface Playlist {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  tracks: { total: number };
-}
-
-interface PlaylistsResponse {
-  items: Playlist[];
-  next: string | null;
-}
-
 /**
  * GET /api/playlists
  */

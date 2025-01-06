@@ -5,32 +5,12 @@ import axios from 'axios';
 // ★ NextAuthのトークンを取得するための関数
 import { getToken } from 'next-auth/jwt';
 
-/**
- * Spotify APIの型定義例 (必要に応じて拡張してください)
- */
-interface Track {
-  id: string;
-  name: string;
-  album: {
-    name: string;
-    images: Array<{ url: string }>;
-  };
-  artists: Array<{ name: string }>;
-}
-
-interface TracksResponse {
-  items: Array<{ track: Track }>;
-  total: number;
-}
-
 export default async function libraryHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
     // ★ NextAuthのJWTを取得
-    // NEXTAUTH_SECRET が必要なので、.env.local等で設定してください
-    // e.g. NEXTAUTH_SECRET="some_long_random_string"
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
     // ログインしていなければtokenはnull
@@ -52,7 +32,7 @@ export default async function libraryHandler(
 
     do {
       // https://api.spotify.com/v1/me/tracks から最大50件ずつ取得
-      const response = await axios.get<TracksResponse>(
+      const response = await axios.get<LibraryTracksResponse>(
         'https://api.spotify.com/v1/me/tracks',
         {
           headers: {

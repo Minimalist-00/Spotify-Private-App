@@ -3,16 +3,6 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-interface Track {
-  id: string;
-  name: string;
-  album: {
-    name: string;
-    images: Array<{ url: string }>;
-  };
-  artists: Array<{ name: string }>;
-}
-
 const Library = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [error, setError] = useState<string | null>(null);

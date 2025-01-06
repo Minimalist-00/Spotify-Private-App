@@ -3,39 +3,6 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-// --- 型定義例: 必要に応じてカスタマイズ ---
-interface Playlist {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  owner: {
-    display_name: string;
-  };
-  tracks: {
-    total: number;
-  };
-}
-
-interface PlaylistTrack {
-  track: {
-    id: string;
-    name: string;
-    album?: {
-      name?: string;
-      images?: Array<{ url: string }>;
-    };
-    artists?: Array<{ name: string }>;
-  };
-}
-
-interface FetchPlaylistsResponse {
-  playlists: Playlist[];
-}
-
-interface FetchTracksResponse {
-  tracks: PlaylistTrack[];
-}
-
 const Playlists = () => {
   // プレイリスト一覧
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
