@@ -1,6 +1,9 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import SpotifyProvider from 'next-auth/providers/spotify';
-import { MyToken } from '@/types/next-auth'; // 拡張JWT型
+import { MyToken } from '@/types/next-auth';
+import { supabase } from '@/utils/supabaseClient';
+import { fetchSpotifySavedTracks } from '@/lib/spotify';      // Step1 で作成
+import { saveTracksToSupabase } from '@/lib/supabase';        // Step2 で作成
 
 const scopes = [
   'user-top-read',
@@ -9,10 +12,9 @@ const scopes = [
   'playlist-read-private',
   'playlist-read-collaborative',
   'user-read-recently-played',
-  'user-read-email',         // もしメールも欲しいなら
+  'user-read-email',
 ].join(' ');
 
-// (A) Spotifyプロフィール取得ヘルパー
 async function fetchSpotifyProfile(accessToken: string) {
   const response = await fetch('https://api.spotify.com/v1/me', {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -23,7 +25,37 @@ async function fetchSpotifyProfile(accessToken: string) {
   return response.json();
 }
 
-// (B) リフレッシュ用ヘルパーはそのまま
+async function saveUserToSupabase(user: {
+  spotify_user_id: string;
+  display_name: string | null;
+  email: string | null;
+  image_url: string | null;
+  additional_info?: object;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .upsert(
+        {
+          spotify_user_id: user.spotify_user_id,
+          display_name: user.display_name,
+          email: user.email,
+          image_url: user.image_url,
+          additional_info: user.additional_info,
+        },
+        { onConflict: 'spotify_user_id' } // 重複時に更新
+      );
+
+    if (error) {
+      throw new Error(`Error saving user to Supabase: ${error.message}`);
+    }
+
+    return data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function refreshAccessToken(token: MyToken): Promise<MyToken> {
   try {
     const url = 'https://accounts.spotify.com/api/token';
@@ -63,7 +95,6 @@ async function refreshAccessToken(token: MyToken): Promise<MyToken> {
   }
 }
 
-// (C) NextAuth オプション設定
 export const authOptions: NextAuthOptions = {
   providers: [
     SpotifyProvider({
@@ -71,64 +102,74 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
       authorization: {
         url: 'https://accounts.spotify.com/authorize',
-        params: {
-          scope: scopes,
-          show_dialog: true,
-        },
+        params: { scope: scopes, show_dialog: true },
       },
     }),
   ],
   session: { strategy: 'jwt' },
 
   callbacks: {
-    async jwt({ token, account}) {
-      // 初回ログイン時 (account && user があるとき)
+    async jwt({ token, account }) {
       if (account) {
-        // まずアクセストークンなどをtokenに保存
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.accessTokenExpires = Date.now() + (account.expires_in as number) * 1000;
 
         try {
-          // (1) /v1/me を呼んでSpotifyプロフィールを取得
           const me = await fetchSpotifyProfile(account.access_token!);
-
-          // (2) 必要なプロパティをtoken.userにセット
           token.user = {
             id: me.id,
             name: me.display_name,
             email: me.email,
             image: me.images?.[0]?.url,
             country: me.country,
-            // ほかにも followers.total などが欲しければ追加
           };
+
+          // Supabaseにデータを保存
+          await saveUserToSupabase({
+            spotify_user_id: me.id,
+            display_name: me.display_name,
+            email: me.email,
+            image_url: me.images?.[0]?.url,
+            additional_info: { country: me.country },
+          });
+
+          // ★★ 4) Spotifyのお気に入り曲を全件取得し、tracks テーブルに保存する部分 ★★
+          const savedTracks = await fetchSpotifySavedTracks(account.access_token!);
+
+          // tracksテーブルに入れる形式に整形。
+          // user_id はここでは "SpotifyのユーザーID" をキーにする
+          const tracksToSave = savedTracks.map((track) => ({
+            spotify_track_id: track.id,
+            user_id: me.id, // ここはアプリで一意に管理するIDに合わせる
+            name: track.name,
+            artist_name: track.artists?.[0]?.name ?? '',
+            album_name: track.album?.name ?? '',
+            image_url: track.album?.images?.[0]?.url ?? '',
+          }));
+
+          // Supabaseに upsert
+          await saveTracksToSupabase(tracksToSave);
         } catch (err) {
-          console.error('Failed to fetch user profile:', err);
+          console.error('Failed to fetch user profile or save to Supabase:', err);
         }
 
         return token;
       }
 
-      // トークンが期限内ならそのまま返す
       if (Date.now() < (token as MyToken).accessTokenExpires!) {
         return token;
       }
 
-      // 期限切れならリフレッシュ
       return await refreshAccessToken(token as MyToken);
     },
 
     async session({ session, token }) {
-      // token.user が存在するなら session.user にコピー
       if (token.user) {
         session.user = token.user as typeof session.user;
       }
       session.accessToken = (token as MyToken).accessToken;
       session.error = (token as MyToken).error;
-
-      // ※console.logでセッション内容を確認したい場合
-      // console.log('session callback:', session);
-
       return session;
     },
   },

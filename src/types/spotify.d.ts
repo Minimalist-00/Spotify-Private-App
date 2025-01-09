@@ -12,6 +12,7 @@ interface Playlist {
   name: string;
   images: Array<{ url: string }>;
   owner: {
+    id: string,
     display_name: string;
   };
   tracks: {
