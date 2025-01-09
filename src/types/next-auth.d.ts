@@ -17,5 +17,12 @@ declare module 'next-auth' {
   interface Session {
     accessToken?: string;
     error?: string;
+    user?: {
+      id?: string | null;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      // 必要に応じて他のフィールド
+    };
   }
 }
