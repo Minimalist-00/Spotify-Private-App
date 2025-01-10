@@ -1,161 +1,143 @@
-// src/pages/Playlists.tsx
-
+import React, { useEffect, useState } from 'react';
+import { useSession, signIn } from 'next-auth/react';
+import { supabase } from '@/utils/supabaseClient';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 
-const Playlists = () => {
-  // プレイリスト一覧
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  // 選択中のプレイリストID
-  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
-  // 選択中プレイリストの楽曲一覧
-  const [tracks, setTracks] = useState<PlaylistTrack[]>([]);
-  // エラーメッセージ
-  const [error, setError] = useState<string | null>(null);
-  // ローディング状態
-  const [loadingPlaylists, setLoadingPlaylists] = useState<boolean>(false);
-  const [loadingTracks, setLoadingTracks] = useState<boolean>(false);
+// ユーザー情報の型 (最低限)
+type UserData = {
+  spotify_user_id: string;     // PK
+  display_name: string | null; // 名前
+};
 
-  // --- (A) マウント時にプレイリスト一覧を取得 ---
+type TrackData = {
+  spotify_track_id: string;  // PK
+  user_id: string;           // users.spotify_user_id 参照
+  name: string;
+  artist_name?: string;
+  album_name?: string;
+};
+
+export default function PlaylistPage() {
+  const { data: session, status } = useSession();
+  const [allUsers, setAllUsers] = useState<UserData[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>(''); // 選択されたユーザーID
+  const [tracks, setTracks] = useState<TrackData[]>([]);
+
+  // 認証チェック
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      setLoadingPlaylists(true);
-      try {
-        const response = await fetch('/api/playlists');
-        if (!response.ok) {
-          throw new Error('Failed to fetch playlists');
-        }
-        const data: FetchPlaylistsResponse = await response.json();
-        setPlaylists(data.playlists || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      } finally {
-        setLoadingPlaylists(false);
+    // 未認証ならログイン促す（またはリダイレクト）
+    if (status === 'unauthenticated') {
+      signIn('spotify');
+    }
+  }, [status]);
+
+  // 1) 全ユーザー一覧を取得
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('spotify_user_id, display_name')
+        // .limit(100) など必要に応じて
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+      if (data) {
+        setAllUsers(data as UserData[]);
       }
     };
-    fetchPlaylists();
+    fetchAllUsers();
   }, []);
 
-  // --- (B) プレイリストIDをクリックしたときにトラックを取得 ---
-  const fetchTracks = async (playlistId: string) => {
-    // 同じプレイリストを再選択した場合は選択解除して一覧を非表示
-    if (playlistId === selectedPlaylist) {
-      setSelectedPlaylist(null);
+  // 2) 選択されたユーザーIDが変わるたびに、そのユーザーの楽曲を取得
+  useEffect(() => {
+    if (!selectedUserId) {
       setTracks([]);
       return;
     }
 
-    setLoadingTracks(true);
-    try {
-      setSelectedPlaylist(playlistId);
-      const response = await fetch(`/api/playlists/${playlistId}/tracks`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tracks for playlist ${playlistId}`);
+    const fetchTracksByUser = async () => {
+      const { data, error } = await supabase
+        .from('tracks')
+        .select('*')
+        .eq('user_id', selectedUserId);   // user_id(=users.spotify_user_id)と合致
+      if (error) {
+        console.error('Error fetching tracks:', error);
+        return;
       }
-      const data: FetchTracksResponse = await response.json();
-      setTracks(data.tracks || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      console.error('Error fetching tracks:', err);
-    } finally {
-      setLoadingTracks(false);
-    }
-  };
+      if (data) {
+        setTracks(data as TrackData[]);
+      }
+    };
+    fetchTracksByUser();
+  }, [selectedUserId]);
 
-  // --- エラー表示 ---
-  if (error) {
-    return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+  if (!session) {
+    return <div>Please login...</div>;
   }
 
-  // --- JSX (表示) ---
+  // ユーザー名の取得
+  const getUserName = (userId: string) => {
+    const u = allUsers.find((u) => u.spotify_user_id === userId);
+    return u?.display_name ?? userId;
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Your Playlists</h1>
-      {loadingPlaylists && <p className="text-center text-gray-500">Loading Playlists...</p>}
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">他ユーザーの楽曲再生ページ</h1>
 
-      {/* プレイリスト一覧 */}
-      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-        {playlists.map((playlist) => (
-          <li
-            key={playlist.id}
-            className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden cursor-pointer hover:bg-gray-700"
-            onClick={() => fetchTracks(playlist.id)}
-          >
-            <div className="relative w-full h-48">
-              <Image
-                src={playlist.images[0]?.url || '/placeholder.png'}
-                alt={playlist.name}
-                layout="fill"
-                objectFit="cover"
-              />
-            </div>
-            <div className="p-4">
-              <h2 className="text-lg font-semibold truncate">{playlist.name}</h2>
-              <p className="text-sm text-gray-400">By: {playlist.owner.display_name}</p>
-              <p className="text-sm text-gray-500 italic truncate">
-                Tracks: {playlist.tracks.total}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {/* ====== 1) ユーザー選択 ====== */}
+      <div className="mb-4">
+        <label className="mr-2 font-semibold">ユーザーを選択:</label>
+        <select
+          value={selectedUserId}
+          onChange={(e) => setSelectedUserId(e.target.value)}
+          className="border p-1 rounded"
+        >
+          <option value="">--ユーザーを選択--</option>
+          {allUsers.map((user) => (
+            <option key={user.spotify_user_id} value={user.spotify_user_id}>
+              {user.display_name || user.spotify_user_id}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {/* 選択中プレイリストのトラック一覧 */}
-      {selectedPlaylist && (
+      {/* ====== 2) 選択されたユーザーの曲一覧 ====== */}
+      {selectedUserId && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Tracks</h2>
-          {loadingTracks ? (
-            <p className="text-center text-gray-500">Loading tracks...</p>
+          <h2 className="text-xl font-semibold mb-2">
+            {getUserName(selectedUserId)} さんの楽曲
+          </h2>
+          {tracks.length === 0 ? (
+            <p>楽曲がありません</p>
           ) : (
-            <>
-              {tracks.length > 0 ? (
-                <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {tracks.map((item) => {
-                    const { track } = item;
-                    return (
-                      <li
-                        key={track.id}
-                        className="bg-gray-800 text-white rounded-lg shadow-lg overflow-hidden"
-                      >
-                        {/* アルバム画像 */}
-                        <div className="relative w-full h-48">
-                          <Image
-                            src={track.album?.images?.[0]?.url || '/placeholder.png'}
-                            alt={track.album?.name || 'No Album'}
-                            layout="fill"
-                            objectFit="cover"
-                          />
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tracks.map((track) => (
+                <div key={track.spotify_track_id} className="border p-4 rounded">
+                  <h3 className="font-bold text-lg">{track.name}</h3>
+                  <p className="text-sm text-gray-500">{track.artist_name}</p>
+                  <p className="text-sm text-gray-500">{track.album_name}</p>
 
-                        {/* トラック情報 */}
-                        <div className="p-4">
-                          <h2 className="text-lg font-semibold truncate">
-                            {track.name || 'No Title'}
-                          </h2>
-                          <p className="text-sm text-gray-400">
-                            {track.artists
-                              ?.map((artist) => artist.name)
-                              .join(', ') || 'Unknown Artist'}
-                          </p>
-                          <p className="text-sm text-gray-500 italic truncate">
-                            {track.album?.name || 'No Album'}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-center text-gray-500">
-                  No tracks found in this playlist.
-                </p>
-              )}
-            </>
+                  {/* 3) 楽曲を再生 (例: 埋め込みiframe 30秒プレビュー) */}
+                  <div className="mt-2">
+                    <iframe
+                      src={`https://open.spotify.com/embed/track/${track.spotify_track_id}`}
+                      width="100%"
+                      height="80"
+                      frameBorder="0"
+                      allow="encrypted-media"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
     </div>
   );
-};
-
-export default Playlists;
+}
