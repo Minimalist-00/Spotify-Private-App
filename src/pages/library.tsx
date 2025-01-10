@@ -1,8 +1,18 @@
 // pages/tracks/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react'; // next-auth使用例
+import { useSession } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
 import Image from 'next/image';
+
+// ★ Material UI コンポーネントをインポート
+import {
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  Checkbox
+} from '@mui/material';
 
 type TrackData = {
   spotify_track_id: string;
@@ -11,18 +21,17 @@ type TrackData = {
   artist_name?: string;
   album_name?: string;
   user_id: string; // DBでの参照外部キー
-  song_favorite_level?: number | null;
-  // can_singing は integer (0|1) or null を想定
-  can_singing?: number | null;  
+  song_favorite_level?: number | null; // 0~5あたり?
+  can_singing?: number | null;         // 0 or 1 or null
 };
 
 export default function TrackClassificationPage() {
   const { data: session } = useSession();
-  const userId = session?.user?.id; // 例: session.user.id に spotify_user_idが入っていると仮定
+  const userId = session?.user?.id;
 
-  // 取得した楽曲データ
+  // 楽曲データ
   const [tracks, setTracks] = useState<TrackData[]>([]);
-  // ローカルで変更したデータを覚えておく
+  // ローカルの変更データ
   const [updatedTracks, setUpdatedTracks] = useState<Map<string, TrackData>>(new Map());
 
   // DBからユーザーの楽曲一覧を取得
@@ -47,9 +56,10 @@ export default function TrackClassificationPage() {
   }, [userId]);
 
   // ==========================
-  // お気に入り度 (1〜5) セレクト
+  // お気に入り度: ラジオボタン(MUI)
   // ==========================
-  const handleSongFavoriteLevelChange = (trackId: string, level: number) => {
+  // level: number or null
+  const handleSongFavoriteLevelChange = (trackId: string, level: number | null) => {
     setUpdatedTracks((prev) => {
       const newMap = new Map(prev);
       const original = newMap.get(trackId) || tracks.find((t) => t.spotify_track_id === trackId);
@@ -60,24 +70,15 @@ export default function TrackClassificationPage() {
   };
 
   // ==========================
-  // 歌えるか (0|1|null) セレクト
+  // 歌えるかどうか: チェックボックス(MUI)
   // ==========================
-  const handleCanSingingChange = (trackId: string, value: string) => {
-    // value は '0'|'1'|'' (未選択)
-    let newValue: number | null;
-    if (value === '1') {
-      newValue = 1;   // 歌える
-    } else if (value === '0') {
-      newValue = 0;   // 歌えない
-    } else {
-      newValue = null; // 未選択
-    }
-
+  // checked => true => can_singing=1, false => can_singing=0
+  const handleCanSingingChange = (trackId: string, checked: boolean) => {
     setUpdatedTracks((prev) => {
       const newMap = new Map(prev);
       const original = newMap.get(trackId) || tracks.find((t) => t.spotify_track_id === trackId);
       if (!original) return newMap;
-      newMap.set(trackId, { ...original, can_singing: newValue });
+      newMap.set(trackId, { ...original, can_singing: checked ? 1 : 0 });
       return newMap;
     });
   };
@@ -85,7 +86,6 @@ export default function TrackClassificationPage() {
   // ==========================
   // 入力済み件数と分類完了曲
   // ==========================
-  // 「song_favorite_level」と「can_singing」が両方とも null でなければ入力済みとみなす
   const updatedCount = Array.from(updatedTracks.values()).filter(
     (t) => t.song_favorite_level != null && t.can_singing != null
   ).length;
@@ -96,7 +96,7 @@ export default function TrackClassificationPage() {
   );
 
   // ==========================
-  // 保存ボタン (Upsert)
+  // 保存ボタン
   // ==========================
   const handleSave = async () => {
     if (updatedTracks.size === 0) return;
@@ -119,7 +119,7 @@ export default function TrackClassificationPage() {
         return;
       }
 
-      // 成功時は updatedTracks をクリア → DB再取得
+      // 更新成功 -> updatedTracksクリア -> DB再取得
       setUpdatedTracks(new Map());
       const { data, error } = await supabase
         .from('tracks')
@@ -135,19 +135,15 @@ export default function TrackClassificationPage() {
     }
   };
 
-  // ==========================
-  // レスポンシブUI
-  // ==========================
   return (
     <div className="flex flex-col min-h-screen">
       {/* ヘッダー */}
       <header className="p-4 bg-gray-800 text-white text-center">
-        <h1 className="text-2xl font-bold">曲の分類</h1>
+        <h1 className="text-2xl font-bold">曲の分類 (MUI)</h1>
       </header>
 
       {/* メインコンテンツ */}
       <main className="flex-1 p-4">
-        {/* コールアウト枠（説明） */}
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
           <p>
             このページでは、以下のように曲の分類ができます。<br />
@@ -156,19 +152,13 @@ export default function TrackClassificationPage() {
           </p>
         </div>
 
-        {/* ========== Mobile向けUI ========== */}
+        {/* ======== Mobile向けUI ======== */}
         <div className="block md:hidden">
           <h2 className="text-xl font-semibold mb-2">曲一覧 (Mobile Layout)</h2>
           {tracks.map((track) => {
-            const updateObj = updatedTracks.get(track.spotify_track_id);
-            const favoriteValue = updateObj?.song_favorite_level ?? track.song_favorite_level ?? '';
-
-            // can_singing = 1->'1', 0->'0', null->''
-            const singingState = updateObj?.can_singing ?? track.can_singing;
-            const singingValue =
-              singingState === 1 ? '1'
-              : singingState === 0 ? '0'
-              : '';
+            const updated = updatedTracks.get(track.spotify_track_id);
+            const favoriteValue = updated?.song_favorite_level ?? track.song_favorite_level;
+            const canSinging = updated?.can_singing ?? track.can_singing;
 
             return (
               <div key={track.spotify_track_id} className="mb-4 border-b pb-2">
@@ -187,42 +177,62 @@ export default function TrackClassificationPage() {
                     <div className="text-sm text-gray-600">{track.artist_name}</div>
                   </div>
                 </div>
-                <div className="mt-2 flex gap-2">
-                  {/* お気に入り度 */}
-                  <select
-                    value={favoriteValue}
-                    onChange={(e) => handleSongFavoriteLevelChange(
-                      track.spotify_track_id,
-                      Number(e.target.value)
-                    )}
-                    className="border rounded p-1"
-                  >
-                    <option value="">曲の好き度</option>
-                    {[1,2,3,4,5].map((num) => (
-                      <option key={num} value={num}>{num}</option>
-                    ))}
-                  </select>
 
-                  {/* can_singing (0 or 1 or null) */}
-                  <select
-                    value={singingValue}
-                    onChange={(e) => handleCanSingingChange(
-                      track.spotify_track_id,
-                      e.target.value
-                    )}
-                    className="border rounded p-1"
-                  >
-                    <option value="">歌えるかどうか</option>
-                    <option value="1">歌える</option>
-                    <option value="0">歌えない</option>
-                  </select>
+                {/* MUI - RadioGroup (お気に入り度) */}
+                <div className="mt-2">
+                  <FormControl>
+                    <FormLabel>曲の好き度</FormLabel>
+                    <RadioGroup
+                      row
+                      value={favoriteValue == null ? '' : String(favoriteValue)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // '' => null
+                        if (val === '') {
+                          handleSongFavoriteLevelChange(track.spotify_track_id, null);
+                        } else {
+                          handleSongFavoriteLevelChange(track.spotify_track_id, Number(val));
+                        }
+                      }}
+                    >
+                      {/* ラジオ: 未選択 */}
+                      <FormControlLabel
+                        value=""
+                        control={<Radio />}
+                        label="未選択"
+                      />
+                      {[1,2,3,4,5].map((num) => (
+                        <FormControlLabel
+                          key={num}
+                          value={String(num)}
+                          control={<Radio />}
+                          label={String(num)}
+                        />
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                </div>
+
+                {/* MUI - CheckBox (歌えるかどうか) */}
+                <div className="mt-2">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={canSinging === 1}
+                        onChange={(e) =>
+                          handleCanSingingChange(track.spotify_track_id, e.target.checked)
+                        }
+                      />
+                    }
+                    label="歌える"
+                  />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* ========== PC向けUI ========== */}
+        {/* ======== PC向けUI ======== */}
         <div className="hidden md:block">
           <h2 className="text-xl font-semibold mb-2">曲一覧 (PC Layout)</h2>
           <table className="w-full border-collapse">
@@ -237,14 +247,9 @@ export default function TrackClassificationPage() {
             </thead>
             <tbody>
               {tracks.map((track) => {
-                const updateObj = updatedTracks.get(track.spotify_track_id);
-                const favoriteValue = updateObj?.song_favorite_level ?? track.song_favorite_level ?? '';
-
-                const singingState = updateObj?.can_singing ?? track.can_singing;
-                const singingValue =
-                  singingState === 1 ? '1'
-                  : singingState === 0 ? '0'
-                  : '';
+                const updated = updatedTracks.get(track.spotify_track_id);
+                const favoriteValue = updated?.song_favorite_level ?? track.song_favorite_level;
+                const canSinging = updated?.can_singing ?? track.can_singing;
 
                 return (
                   <tr key={track.spotify_track_id} className="border-b">
@@ -261,34 +266,53 @@ export default function TrackClassificationPage() {
                     </td>
                     <td className="p-2 border">{track.name}</td>
                     <td className="p-2 border">{track.artist_name}</td>
+
+                    {/* お気に入り度 (RadioGroup) */}
                     <td className="p-2 border">
-                      <select
-                        value={favoriteValue}
-                        onChange={(e) => handleSongFavoriteLevelChange(
-                          track.spotify_track_id,
-                          Number(e.target.value)
-                        )}
-                        className="border rounded p-1"
-                      >
-                        <option value="">未選択</option>
-                        {[1,2,3,4,5].map((num) => (
-                          <option key={num} value={num}>{num}</option>
-                        ))}
-                      </select>
+                      <FormControl>
+                        <FormLabel>お気に入り度</FormLabel>
+                        <RadioGroup
+                          row
+                          value={favoriteValue == null ? '' : String(favoriteValue)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              handleSongFavoriteLevelChange(track.spotify_track_id, null);
+                            } else {
+                              handleSongFavoriteLevelChange(track.spotify_track_id, Number(val));
+                            }
+                          }}
+                        >
+                          <FormControlLabel
+                            value=""
+                            control={<Radio />}
+                            label="未選択"
+                          />
+                          {[1,2,3,4,5].map((num) => (
+                            <FormControlLabel
+                              key={num}
+                              value={String(num)}
+                              control={<Radio />}
+                              label={String(num)}
+                            />
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
                     </td>
-                    <td className="p-2 border">
-                      <select
-                        value={singingValue}
-                        onChange={(e) => handleCanSingingChange(
-                          track.spotify_track_id,
-                          e.target.value
-                        )}
-                        className="border rounded p-1"
-                      >
-                        <option value="">未選択</option>
-                        <option value="1">歌える</option>
-                        <option value="0">歌えない</option>
-                      </select>
+
+                    {/* 歌える？ (CheckBox) */}
+                    <td className="p-2 border text-center">
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={canSinging === 1}
+                            onChange={(e) =>
+                              handleCanSingingChange(track.spotify_track_id, e.target.checked)
+                            }
+                          />
+                        }
+                        label="歌える"
+                      />
                     </td>
                   </tr>
                 );
@@ -297,7 +321,7 @@ export default function TrackClassificationPage() {
           </table>
         </div>
 
-        {/* 分類完了曲の表示 */}
+        {/* 分類完了曲 */}
         <div className="mt-6">
           <h3 className="text-lg font-semibold">分類完了曲</h3>
           <p>入力が完了している楽曲: {completedTracks.length} 曲</p>
@@ -317,12 +341,14 @@ export default function TrackClassificationPage() {
                   <div className="font-bold">{track.name}</div>
                   <div>{track.artist_name}</div>
                   <div>
-                    お気に入り度: {track.song_favorite_level}
+                    お気に入り度: {track.song_favorite_level ?? '未選択'}
                     <br />
-                    歌える?: 
-                    {track.can_singing === 1 ? '歌える' 
-                     : track.can_singing === 0 ? '歌えない' 
-                     : '未選択'}
+                    歌える?:
+                    {track.can_singing === 1
+                      ? '歌える'
+                      : track.can_singing === 0
+                      ? '歌えない'
+                      : '未選択'}
                   </div>
                 </div>
               </div>
@@ -331,7 +357,7 @@ export default function TrackClassificationPage() {
         </div>
       </main>
 
-      {/* フッター (画面下部固定) */}
+      {/* フッター */}
       <footer className="p-4 border-t bg-white text-center sticky bottom-0">
         <p className="mb-2">現在 {updatedCount} 曲入力されています</p>
         <button
