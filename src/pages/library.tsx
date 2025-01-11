@@ -31,6 +31,8 @@ import {
   Card,
   CardMedia,
   CardContent,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -50,6 +52,10 @@ type TrackData = {
 export default function TrackClassificationPage() {
   const { data: session } = useSession();
   const userId = session?.user?.id;
+
+  // レスポンシブ判定 (md以上かどうか)
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   // 全楽曲
   const [tracks, setTracks] = useState<TrackData[]>([]);
@@ -175,6 +181,7 @@ export default function TrackClassificationPage() {
   const handleChangeMobileTab = (event: React.SyntheticEvent, newValue: number) => {
     setMobileTab(newValue);
   };
+
   // 未分類の曲
   const unclassifiedTracks = tracks.filter(
     (t) => t.can_singing == null || t.song_favorite_level == null
@@ -226,6 +233,7 @@ export default function TrackClassificationPage() {
         }
       }
 
+      // 分類変更後、updatedTracksの該当エントリを削除（または上書き）する
       setUpdatedTracks((prev) => {
         const newMap = new Map(prev);
         newMap.delete(editingTrackId);
@@ -263,7 +271,12 @@ export default function TrackClassificationPage() {
 
         {/* モバイル向けタブレイアウト */}
         <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-          <Tabs value={mobileTab} onChange={handleChangeMobileTab} textColor="primary" indicatorColor="primary">
+          <Tabs
+            value={mobileTab}
+            onChange={handleChangeMobileTab}
+            textColor="primary"
+            indicatorColor="primary"
+          >
             <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
             <Tab label={`分類完了 (${completedTracks.length}曲)`} />
           </Tabs>
@@ -323,7 +336,9 @@ export default function TrackClassificationPage() {
                         <RadioGroup
                           row
                           value={
-                            canSinging == null || canSinging === 0 ? '' : String(canSinging)
+                            canSinging == null || canSinging === 0
+                              ? ''
+                              : String(canSinging)
                           }
                           onChange={(e) => {
                             const val = e.target.value;
@@ -334,7 +349,7 @@ export default function TrackClassificationPage() {
                             }
                           }}
                         >
-                          <FormControlLabel value="" control={<Radio />} label="未選択" />
+                          {/* ラベルを追加するなら: <FormControlLabel value="" control={<Radio />} label="未選択" /> */}
                           {[1, 2, 3, 4].map((num) => (
                             <FormControlLabel
                               key={num}
@@ -363,7 +378,6 @@ export default function TrackClassificationPage() {
                             }
                           }}
                         >
-                          <FormControlLabel value="" control={<Radio />} label="未選択" />
                           {[1, 2, 3, 4].map((num) => (
                             <FormControlLabel
                               key={num}
@@ -479,7 +493,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -505,7 +518,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -595,7 +607,9 @@ export default function TrackClassificationPage() {
                           <RadioGroup
                             row
                             value={
-                              canSinging == null || canSinging === 0 ? '' : String(canSinging)
+                              canSinging == null || canSinging === 0
+                                ? ''
+                                : String(canSinging)
                             }
                             onChange={(e) => {
                               const val = e.target.value;
@@ -606,7 +620,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -633,7 +646,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -754,7 +766,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -780,7 +791,6 @@ export default function TrackClassificationPage() {
                               }
                             }}
                           >
-                            <FormControlLabel value="" control={<Radio />} label="未選択" />
                             {[1, 2, 3, 4].map((num) => (
                               <FormControlLabel
                                 key={num}
@@ -810,23 +820,25 @@ export default function TrackClassificationPage() {
         </Box>
       </Container>
 
-      {/* フッター */}
-      <Paper
-        sx={{
-          position: 'sticky',
-          bottom: 0,
-          py: 2,
-          textAlign: 'center',
-        }}
-        elevation={3}
-      >
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          現在 {updatedCount} 曲入力されています
-        </Typography>
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          保存
-        </Button>
-      </Paper>
+      {/* フッター (未分類タブまたはPCレイアウト時のみ表示) */}
+      {(mobileTab === 0 || isDesktop) && (
+        <Paper
+          sx={{
+            position: 'sticky',
+            bottom: 0,
+            py: 2,
+            textAlign: 'center',
+          }}
+          elevation={3}
+        >
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            現在 {updatedCount} 曲入力されています
+          </Typography>
+          <Button variant="contained" color="primary" onClick={handleSave}>
+            保存
+          </Button>
+        </Paper>
+      )}
     </Box>
   );
 }
