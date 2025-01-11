@@ -1,4 +1,3 @@
-// pages/tracks/index.tsx
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
@@ -33,6 +32,7 @@ import {
   CardContent,
   useMediaQuery,
   useTheme,
+  Snackbar,              // 追加
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -61,6 +61,11 @@ export default function TrackClassificationPage() {
   const [tracks, setTracks] = useState<TrackData[]>([]);
   // ローカル変更を記録
   const [updatedTracks, setUpdatedTracks] = useState<Map<string, TrackData>>(new Map());
+
+  // ==========================
+  // 「保存が完了しました」通知用のステート
+  // ==========================
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // ==========================
   // DBからユーザーの楽曲一覧を取得
@@ -167,8 +172,14 @@ export default function TrackClassificationPage() {
         .from('tracks')
         .select('*')
         .eq('user_id', userId);
-      if (error) console.error('Error refetching tracks:', error);
-      else if (data) setTracks(data as TrackData[]);
+      if (error) {
+        console.error('Error refetching tracks:', error);
+      } else if (data) {
+        setTracks(data as TrackData[]);
+      }
+
+      // ★ 保存完了したら「保存完了」を通知表示
+      setSaveSuccess(true);
     } catch (err) {
       console.error('Save error:', err);
     }
@@ -239,6 +250,7 @@ export default function TrackClassificationPage() {
         newMap.delete(editingTrackId);
         return newMap;
       });
+      setSaveSuccess(true);
     } catch (err) {
       console.error('Save error:', err);
     }
@@ -248,6 +260,20 @@ export default function TrackClassificationPage() {
   };
 
   const isEditing = (trackId: string) => editingTrackId === trackId;
+
+  // ==========================
+  // Snackbarを閉じるハンドラ
+  // ==========================
+  const handleCloseSnackbar = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    // ユーザが画面タップなどで明示的に閉じようとしたとき
+    if (reason === 'clickaway') {
+      return; // クリックアウェイは閉じない設定も可能
+    }
+    setSaveSuccess(false);
+  };
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
@@ -349,7 +375,6 @@ export default function TrackClassificationPage() {
                             }
                           }}
                         >
-                          {/* ラベルを追加するなら: <FormControlLabel value="" control={<Radio />} label="未選択" /> */}
                           {[1, 2, 3, 4].map((num) => (
                             <FormControlLabel
                               key={num}
@@ -839,6 +864,24 @@ export default function TrackClassificationPage() {
           </Button>
         </Paper>
       )}
+
+      {/* Snackbar：保存が完了したら表示 */}
+      <Snackbar
+        open={saveSuccess}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="success"
+          sx={{ width: '100%' }}
+          elevation={6}
+          variant="filled"
+        >
+          保存が完了しました！
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
