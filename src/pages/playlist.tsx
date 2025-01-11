@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
-import Image from 'next/image';
 
 // ユーザー情報の型 (最低限)
 type UserData = {
