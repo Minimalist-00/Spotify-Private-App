@@ -8,6 +8,7 @@ type TrackToSave = {
   artist_name: string;
   album_name: string;
   image_url?: string;
+  popularity: number;
 };
 
 export async function saveTracksToSupabase(

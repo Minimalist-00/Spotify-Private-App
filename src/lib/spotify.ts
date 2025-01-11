@@ -7,6 +7,7 @@ type SpotifyTrack = {
   name: string;
   artists: { name: string }[];
   album: { name: string; images: { url: string }[] };
+  popularity: number;
   // 必要に応じてフィールド追加
 };
 
