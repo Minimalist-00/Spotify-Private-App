@@ -16,29 +16,25 @@ export default function Home() {
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-gray-900 text-white">
-      {/* ヘッダー: タイトルやログアウトボタンをまとめる */}
-      <header className="flex items-center justify-between p-4 bg-gray-800">
-        <h1 className="text-xl font-bold">
-          Spotify History App
-        </h1>
+    <div className="relative flex flex-col min-h-screen text-gray-800">
+      {/* ヘッダー */}
+      <header className="flex items-center justify-between p-4 bg-green-600 text-white shadow-md">
+        <h1 className="text-xl font-bold">My Track History App</h1>
         {session && (
           <div className="flex items-center space-x-4">
-            {/* ユーザーアイコン */}
             {session.user?.image && (
               <Image
                 src={session.user.image}
                 alt="Profile"
                 width={40}
                 height={40}
-                className="w-10 h-10 rounded-full"
+                className="w-10 h-10 rounded-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = '/fallback.png';
                 }}
               />
             )}
-            {/* ログアウトボタン */}
             <button
               onClick={handleLogout}
               className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-sm"
@@ -50,44 +46,47 @@ export default function Home() {
       </header>
 
       {/* メインコンテンツ */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+      <main className="flex-1 flex flex-col items-center justify-center bg-green-50 p-6">
         {!session ? (
           // ===== ログイン前 =====
-          <div className="text-center">
-            <h2 className="text-4xl font-bold mb-6">
-              Welcome to Spotify History App
+          <div className="w-full max-w-sm mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-green-600">
+              実験へのご協力
             </h2>
-            <p className="text-lg text-gray-400 mb-8">
-              Discover your listening history and favorite tracks.
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-green-600">
+              ありがとうございます！
+            </h2>
+            <p className="text-base md:text-lg text-gray-700 mb-6">
+              下記のボタンから<br/>Spotifyへログインを行なってください。<br/><br/>
+              ログイン時に実験で使用するサービスで<br/>あなたのライブラリ情報等を使用することに<br/>同意いただく必要があります。
             </p>
             <button
               onClick={handleLogin}
-              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white text-lg font-semibold rounded-lg shadow-md transition-all"
+              className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-semibold rounded-lg shadow-md transition-all"
             >
               Login with Spotify
             </button>
           </div>
         ) : (
           // ===== ログイン後 =====
-          <div className="container mx-auto px-4 py-8 flex-1">
-            <h1 className="text-3xl font-bold text-center mb-8">曲の分類</h1>
-            <p className="text-gray-400 text-center mb-8">
-              ここではあなたの楽曲を「お気に入り度」と「歌えるかどうか」で分類します。
+          <div className="w-full max-w-md mx-auto flex flex-col items-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-center mb-4 text-green-700">
+              曲の分類
+            </h1>
+            <p className="text-gray-700 text-center mb-8">
+              あなたの楽曲を<br/>「お気に入り度」と「歌いやすさ」<br/>で分類しましょう。
             </p>
-            <ul className="flex justify-center sm:grid-cols-2 md:grid-cols-3 gap-6">
-              <li className="bg-gray-800 text-white rounded-lg shadow-lg p-6 text-center hover:bg-gray-700 transition-colors">
-                <Link href="/library" className="text-lg font-semibold hover:underline">
-                  ライブラリへ
-                </Link>
-              </li>
-            </ul>
+            {/* ライブラリへのリンク */}
+            <Link href="/library" className="block w-full bg-white border border-green-300 hover:bg-green-100 text-green-800 text-lg font-semibold text-center rounded-lg shadow p-4 transition-colors">
+                ライブラリへ
+            </Link>
           </div>
         )}
       </main>
 
       {/* フッター */}
-      <footer className="p-4 bg-gray-800 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} Spotify History App. All rights reserved.
+      <footer className="p-4 bg-green-100 text-center text-sm text-gray-600">
+        © {new Date().getFullYear()} My Track History App. All rights reserved.
       </footer>
     </div>
   );
