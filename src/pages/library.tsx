@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Head from 'next/head'; // ダークモード拒否用のメタタグ挿入に使用
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
 import Image from 'next/image';
@@ -33,7 +34,7 @@ import {
   useMediaQuery,
   useTheme,
   Snackbar,
-  TextField, // 検索ボックスに使用
+  TextField,
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -288,732 +289,805 @@ export default function TrackClassificationPage() {
   // UIレンダリング
   // ==========================
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
-      {/* ヘッダー => Spotifyっぽい緑 */}
-      <AppBar
-        position="static"
-        sx={{
-          backgroundColor: '#1DB954', // Spotifyのイメージカラー
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            曲の分類
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <>
+      {/* ダークモードを拒否するメタタグ */}
+      <Head>
+        <meta name="color-scheme" content="light" />
+        <meta name="supported-color-schemes" content="light" />
+      </Head>
 
-      <Container sx={{ flex: 1, py: 2 }}>
-        {/* 説明エリア */}
-        <Alert
-          severity="info"
+      <Box display="flex" flexDirection="column" minHeight="100vh">
+        {/* ヘッダー => Spotifyっぽい緑 */}
+        <AppBar
+          position="static"
           sx={{
-            mb: 3,
-            backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
+            backgroundColor: '#1DB954', // Spotifyのイメージカラー
           }}
         >
-          このページでは、「歌いやすさ(0~4)」と「思い入れ(1~4)」を入力します。<br />
-          0 は「歌えない」(チェックボックス)、1～4 は「歌える度合い」(ラジオボタン)、<br />
-          思い入れは 1～4 段階 です。<br />
-          分類完了した曲でもタップ/クリックで再分類ができます。
-        </Alert>
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              曲の分類
+            </Typography>
+          </Toolbar>
+        </AppBar>
 
-        {/* モバイル向けタブレイアウト */}
-        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-          <Tabs
-            value={mobileTab}
-            onChange={handleChangeMobileTab}
-            textColor="inherit"
-            indicatorColor="secondary"
-            TabIndicatorProps={{
-              style: {
-                backgroundColor: 'green', // インジケーターの色を緑に設定
-              },
-            }}
+        <Container sx={{ flex: 1, py: 2 }}>
+          {/* 説明エリア */}
+          <Alert
+            severity="info"
             sx={{
-              backgroundColor: 'rgb(220 252 231 / var(--tw-bg-opacity, 1))', // やや明るめの緑
-              borderRadius: 1,
+              mb: 3,
+              backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
             }}
           >
-            <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
-            <Tab label={`分類完了 (${completedTracks.length}曲)`} />
-          </Tabs>
+            このページでは、「歌いやすさ(0~4)」と「思い入れ(1~4)」を入力します。<br />
+            0 は「歌えない」(チェックボックス)、1～4 は「歌える度合い」(ラジオボタン)、<br />
+            思い入れは 1～4 段階 です。<br />
+            分類完了した曲でもタップ/クリックで再分類ができます。
+          </Alert>
 
-          {/* --- 未分類タブ --- */}
-          {mobileTab === 0 && (
-            <Box sx={{ mt: 2 }}>
-              {unclassifiedTracks.length === 0 ? (
-                // 未分類が空の場合
-                <Paper sx={{ p: 2, mb: 2 }}>
+          {/* モバイル向けタブレイアウト */}
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            <Tabs
+              value={mobileTab}
+              onChange={handleChangeMobileTab}
+              textColor="inherit"
+              indicatorColor="secondary"
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: 'green', // インジケーターの色を緑に設定
+                },
+              }}
+              sx={{
+                backgroundColor: 'rgb(220 252 231 / var(--tw-bg-opacity, 1))', // やや明るめの緑
+                borderRadius: 1,
+              }}
+            >
+              <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
+              <Tab label={`分類完了 (${completedTracks.length}曲)`} />
+            </Tabs>
+
+            {/* --- 未分類タブ --- */}
+            {mobileTab === 0 && (
+              <Box sx={{ mt: 2 }}>
+                {unclassifiedTracks.length === 0 ? (
+                  // 未分類が空の場合
+                  <Paper sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      曲は全て分類されました！
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      分類評価に間違いがある場合には
+                      <br />
+                      分類完了曲のタブから再度評価してください。
+                      <br />
+                      <br />
+                      ご協力ありがとうございましたm(_ _)m
+                    </Typography>
+                  </Paper>
+                ) : (
+                  // 未分類曲がある場合
+                  unclassifiedTracks.map((track) => {
+                    const updated = updatedTracks.get(track.spotify_track_id);
+                    const canSinging = updated?.can_singing ?? track.can_singing;
+                    const favLevel =
+                      updated?.song_favorite_level ?? track.song_favorite_level;
+
+                    return (
+                      <Paper key={track.spotify_track_id} sx={{ p: 2, mb: 2 }}>
+                        {/* 画像と曲名 */}
+                        <Box display="flex" gap={2}>
+                          {track.image_url && (
+                            <Image
+                              src={track.image_url}
+                              alt={track.name || 'No Album'}
+                              width={50}
+                              height={50}
+                              style={{ objectFit: 'cover' }}
+                            />
+                          )}
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              {track.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {track.artist_name}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {/* コンパクトなレイアウト: 歌えない, 歌いやすさ, 思い入れ */}
+                        <Box
+                          mt={1}
+                          display="flex"
+                          flexDirection="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                          sx={{ flexWrap: 'wrap' }}
+                        >
+
+                          {/* 歌いやすさ (1~4) */}
+                          <Box
+                            display="flex"
+                            flexDirection="row"
+                            alignItems="center"
+                            sx={{ mr: 1, mb: 1 }}
+                          >
+                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14 }}>
+                              歌いやすさ
+                            </FormLabel>
+                            {/* 歌えない */}
+                            <Box
+                              display="flex"
+                              flexDirection="row"
+                              alignItems="center"
+                            >
+                              <FormControlLabel
+                                label=""
+                                labelPlacement="end"
+                                control={
+                                  <Checkbox
+                                    icon={<CheckBoxOutlineBlankIcon />}
+                                    checkedIcon={<CloseIcon />}
+                                    checked={canSinging === 0}
+                                    onChange={(e) =>
+                                      handleCannotSingCheck(
+                                        track.spotify_track_id,
+                                        e.target.checked
+                                      )
+                                    }
+                                  />
+                                }
+                              />
+                            </Box>
+                            <RadioGroup
+                              row
+                              value={
+                                canSinging == null || canSinging === 0
+                                  ? ''
+                                  : String(canSinging)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  handleCanSingingChange(track.spotify_track_id, null);
+                                } else {
+                                  handleCanSingingChange(
+                                    track.spotify_track_id,
+                                    Number(val)
+                                  );
+                                }
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio size="small" />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </Box>
+
+                          {/* 思い入れ (1~4) */}
+                          <Box
+                            display="flex"
+                            flexDirection="row"
+                            alignItems="center"
+                            sx={{ mb: 1 }}
+                          >
+                            <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 7.9 }}>
+                              思い入れ
+                            </FormLabel>
+                            <RadioGroup
+                              row
+                              value={favLevel == null ? '' : String(favLevel)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  handleFavoriteLevelChange(
+                                    track.spotify_track_id,
+                                    null
+                                  );
+                                } else {
+                                  handleFavoriteLevelChange(
+                                    track.spotify_track_id,
+                                    Number(val)
+                                  );
+                                }
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio size="small" />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    );
+                  })
+                )}
+              </Box>
+            )}
+
+            {/* --- 分類完了タブ --- */}
+            {mobileTab === 1 && (
+              <Box sx={{ mt: 2 }}>
+                {/* 曲名検索テキストフィールド */}
+                <TextField
+                  label="曲名で検索"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+
+                {completedTracks.length === 0 ? (
+                  // 分類完了が空の場合
+                  <Paper sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      曲が分類されていません。
+                    </Typography>
+                  </Paper>
+                ) : (
+                  // 分類完了曲がある場合 => フィルタリング結果表示
+                  filteredCompletedTracks.map((track) => {
+                    const editing = isEditing(track.spotify_track_id);
+                    if (!editing) {
+                      return (
+                        <Paper
+                          key={track.spotify_track_id}
+                          sx={{ p: 2, mb: 2, cursor: 'pointer' }}
+                          onClick={() => startReclassify(track)}
+                        >
+                          <Box display="flex" gap={2}>
+                            {track.image_url && (
+                              <Image
+                                src={track.image_url}
+                                alt={track.name || 'No Album'}
+                                width={64}
+                                height={64}
+                                style={{ objectFit: 'cover' }}
+                              />
+                            )}
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {track.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {track.artist_name}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            歌いやすさ:{' '}
+                            {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
+                            <br />
+                            思い入れ: {track.song_favorite_level}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            (タップで再分類)
+                          </Typography>
+                        </Paper>
+                      );
+                    } else {
+                      // 編集UI
+                      return (
+                        <Paper key={track.spotify_track_id} sx={{ p: 2, mb: 2 }}>
+                          <Box display="flex" gap={2}>
+                            {track.image_url && (
+                              <Image
+                                src={track.image_url}
+                                alt={track.name || 'No Album'}
+                                width={64}
+                                height={64}
+                                style={{ objectFit: 'cover' }}
+                              />
+                            )}
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {track.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {track.artist_name}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* 再分類UIのコンパクト化 */}
+                          <Box
+                            mt={2}
+                            display="flex"
+                            flexDirection="row"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                            sx={{ flexWrap: 'wrap' }}
+                          >
+                            {/* 歌えない */}
+                            <Box
+                              display="flex"
+                              flexDirection="row"
+                              alignItems="center"
+                              sx={{ mr: 2, mb: 1 }}
+                            >
+                              <FormControlLabel
+                                label="歌えない"
+                                labelPlacement="end"
+                                control={
+                                  <Checkbox
+                                    icon={<CheckBoxOutlineBlankIcon />}
+                                    checkedIcon={<CloseIcon />}
+                                    checked={tempCanSinging === 0}
+                                    onChange={(e) =>
+                                      setTempCanSinging(e.target.checked ? 0 : null)
+                                    }
+                                  />
+                                }
+                              />
+                            </Box>
+
+                            {/* 歌いやすさ (1~4) */}
+                            <Box
+                              display="flex"
+                              flexDirection="row"
+                              alignItems="center"
+                              sx={{ mr: 2, mb: 1 }}
+                            >
+                              <FormLabel sx={{ minWidth: '5rem', fontSize: 14 }}>
+                                歌いやすさ
+                              </FormLabel>
+                              <RadioGroup
+                                row
+                                value={
+                                  tempCanSinging == null || tempCanSinging === 0
+                                    ? ''
+                                    : String(tempCanSinging)
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '') {
+                                    setTempCanSinging(null);
+                                  } else {
+                                    setTempCanSinging(Number(val));
+                                  }
+                                }}
+                              >
+                                {[1, 2, 3, 4].map((num) => (
+                                  <FormControlLabel
+                                    key={num}
+                                    value={String(num)}
+                                    control={<Radio size="small" />}
+                                    label={String(num)}
+                                  />
+                                ))}
+                              </RadioGroup>
+                            </Box>
+
+                            {/* 思い入れ (1~4) */}
+                            <Box
+                              display="flex"
+                              flexDirection="row"
+                              alignItems="center"
+                              sx={{ mb: 1 }}
+                            >
+                              <FormLabel sx={{ minWidth: '4rem', fontSize: 14 }}>
+                                思い入れ
+                              </FormLabel>
+                              <RadioGroup
+                                row
+                                value={tempFavoriteLevel == null ? '' : String(tempFavoriteLevel)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '') {
+                                    setTempFavoriteLevel(null);
+                                  } else {
+                                    setTempFavoriteLevel(Number(val));
+                                  }
+                                }}
+                              >
+                                {[1, 2, 3, 4].map((num) => (
+                                  <FormControlLabel
+                                    key={num}
+                                    value={String(num)}
+                                    control={<Radio size="small" />}
+                                    label={String(num)}
+                                  />
+                                ))}
+                              </RadioGroup>
+                            </Box>
+                          </Box>
+
+                          <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                            <Button variant="outlined" onClick={cancelReclassify}>
+                              キャンセル
+                            </Button>
+                            <Button variant="contained" onClick={saveReclassify}>
+                              保存
+                            </Button>
+                          </Box>
+                        </Paper>
+                      );
+                    }
+                  })
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* PC Layout */}
+          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 2, color: '#1DB954', fontWeight: 'bold' }} // Spotifyグリーン
+            >
+              曲一覧 (PC Layout)
+            </Typography>
+
+            {/* テーブル表示 */}
+            <TableContainer component={Paper} sx={{ mb: 4 }}>
+              <Table>
+                <TableHead
+                  sx={{
+                    backgroundColor: '#A7F3D0', // 緑系の薄い色
+                  }}
+                >
+                  <TableRow>
+                    <TableCell align="center">画像</TableCell>
+                    <TableCell>曲名</TableCell>
+                    <TableCell>アーティスト</TableCell>
+                    <TableCell align="center">歌えない</TableCell>
+                    <TableCell>歌いやすさ</TableCell>
+                    <TableCell>思い入れ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tracks.map((track) => {
+                    const updated = updatedTracks.get(track.spotify_track_id);
+                    const canSinging = updated?.can_singing ?? track.can_singing;
+                    const favLevel =
+                      updated?.song_favorite_level ?? track.song_favorite_level;
+
+                    return (
+                      <TableRow key={track.spotify_track_id}>
+                        <TableCell align="center">
+                          {track.image_url && (
+                            <Image
+                              src={track.image_url}
+                              alt={track.name || 'No Album'}
+                              width={64}
+                              height={64}
+                              style={{ objectFit: 'cover' }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>{track.name}</TableCell>
+                        <TableCell>{track.artist_name}</TableCell>
+                        <TableCell align="center">
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                icon={<CheckBoxOutlineBlankIcon />}
+                                checkedIcon={<CloseIcon />}
+                                checked={canSinging === 0}
+                                onChange={(e) =>
+                                  handleCannotSingCheck(
+                                    track.spotify_track_id,
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                            }
+                            label=""
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <FormControl>
+                            <FormLabel>歌いやすさ</FormLabel>
+                            <RadioGroup
+                              row
+                              value={
+                                canSinging == null || canSinging === 0
+                                  ? ''
+                                  : String(canSinging)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  handleCanSingingChange(track.spotify_track_id, null);
+                                } else {
+                                  handleCanSingingChange(
+                                    track.spotify_track_id,
+                                    Number(val)
+                                  );
+                                }
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </FormControl>
+                        </TableCell>
+                        <TableCell>
+                          <FormControl>
+                            <FormLabel>思い入れ</FormLabel>
+                            <RadioGroup
+                              row
+                              value={favLevel == null ? '' : String(favLevel)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  handleFavoriteLevelChange(
+                                    track.spotify_track_id,
+                                    null
+                                  );
+                                } else {
+                                  handleFavoriteLevelChange(
+                                    track.spotify_track_id,
+                                    Number(val)
+                                  );
+                                }
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </FormControl>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* 分類完了曲 (再分類) */}
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+                分類完了曲: {completedTracks.length} 曲
+              </Typography>
+
+              {/* 検索テキストフィールド */}
+              <Box sx={{ maxWidth: 400, mb: 2 }}>
+                <TextField
+                  label="曲名で検索"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                />
+              </Box>
+
+              {/* 分類完了が0の場合 */}
+              {completedTracks.length === 0 && (
+                <Paper sx={{ p: 2 }}>
                   <Typography variant="subtitle1" color="text.secondary">
-                    曲は全て分類されました！
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    分類評価に間違いがある場合には
-                    <br />
-                    分類完了曲のタブから再度評価してください。
-                    <br />
-                    <br />
-                    ご協力ありがとうございましたm(_ _)m
+                    曲が分類されていません。
                   </Typography>
                 </Paper>
-              ) : (
-                // 未分類曲がある場合
-                unclassifiedTracks.map((track) => {
-                  const updated = updatedTracks.get(track.spotify_track_id);
-                  const canSinging = updated?.can_singing ?? track.can_singing;
-                  const favLevel = updated?.song_favorite_level ?? track.song_favorite_level;
+              )}
 
-                  return (
-                    <Paper key={track.spotify_track_id} sx={{ p: 2, mb: 2 }}>
-                      {/* 画像と曲名 */}
-                      <Box display="flex" gap={2}>
+              {/* 分類完了がある場合 */}
+              <Box
+                mt={2}
+                display="grid"
+                gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+                gap={2}
+              >
+                {filteredCompletedTracks.map((track) => {
+                  const editing = isEditing(track.spotify_track_id);
+
+                  if (!editing) {
+                    return (
+                      <Card
+                        key={track.spotify_track_id}
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => startReclassify(track)}
+                      >
                         {track.image_url && (
-                          <Image
-                            src={track.image_url}
+                          <CardMedia
+                            component="img"
+                            height="200"
+                            image={track.image_url}
                             alt={track.name || 'No Album'}
-                            width={64}
-                            height={64}
-                            style={{ objectFit: 'cover' }}
                           />
                         )}
-                        <Box>
+                        <CardContent>
                           <Typography variant="subtitle1" fontWeight="bold">
                             {track.name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
                             {track.artist_name}
                           </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* 歌えない(checkbox) */}
-                      <Box mt={2}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              icon={<CheckBoxOutlineBlankIcon />}
-                              checkedIcon={<CloseIcon />}
-                              checked={canSinging === 0}
-                              onChange={(e) =>
-                                handleCannotSingCheck(
-                                  track.spotify_track_id,
-                                  e.target.checked
-                                )
-                              }
-                            />
-                          }
-                          label="歌えない"
-                        />
-                      </Box>
-
-                      {/* 歌いやすさ ラジオ */}
-                      <Box mt={1}>
-                        <FormControl>
-                          <FormLabel>歌いやすさ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              canSinging == null || canSinging === 0
-                                ? ''
-                                : String(canSinging)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                handleCanSingingChange(track.spotify_track_id, null);
-                              } else {
-                                handleCanSingingChange(
-                                  track.spotify_track_id,
-                                  Number(val)
-                                );
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                      </Box>
-
-                      {/* 思い入れ ラジオ */}
-                      <Box mt={1}>
-                        <FormControl>
-                          <FormLabel>思い入れ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={favLevel == null ? '' : String(favLevel)}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                handleFavoriteLevelChange(
-                                  track.spotify_track_id,
-                                  null
-                                );
-                              } else {
-                                handleFavoriteLevelChange(
-                                  track.spotify_track_id,
-                                  Number(val)
-                                );
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                      </Box>
-                    </Paper>
-                  );
-                })
-              )}
-            </Box>
-          )}
-
-          {/* --- 分類完了タブ --- */}
-          {mobileTab === 1 && (
-            <Box sx={{ mt: 2 }}>
-              {/* 曲名検索テキストフィールド */}
-              <TextField
-                label="曲名で検索"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-
-              {completedTracks.length === 0 ? (
-                // 分類完了が空の場合
-                <Paper sx={{ p: 2, mb: 2 }}>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    曲が分類されていません。
-                  </Typography>
-                </Paper>
-              ) : (
-                // 分類完了曲がある場合 => フィルタリング結果表示
-                filteredCompletedTracks.map((track) => {
-                  const editing = isEditing(track.spotify_track_id);
-                  if (!editing) {
-                    return (
-                      <Paper
-                        key={track.spotify_track_id}
-                        sx={{ p: 2, mb: 2, cursor: 'pointer' }}
-                        onClick={() => startReclassify(track)}
-                      >
-                        <Box display="flex" gap={2}>
-                          {track.image_url && (
-                            <Image
-                              src={track.image_url}
-                              alt={track.name || 'No Album'}
-                              width={64}
-                              height={64}
-                              style={{ objectFit: 'cover' }}
-                            />
-                          )}
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {track.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {track.artist_name}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          歌いやすさ:{' '}
-                          {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
-                          <br />
-                          思い入れ: {track.song_favorite_level}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          (タップで再分類)
-                        </Typography>
-                      </Paper>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            歌いやすさ:{' '}
+                            {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
+                            <br />
+                            思い入れ: {track.song_favorite_level}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            (クリックで再分類)
+                          </Typography>
+                        </CardContent>
+                      </Card>
                     );
                   } else {
                     // 編集UI
                     return (
-                      <Paper key={track.spotify_track_id} sx={{ p: 2, mb: 2 }}>
-                        <Box display="flex" gap={2}>
-                          {track.image_url && (
-                            <Image
-                              src={track.image_url}
-                              alt={track.name || 'No Album'}
-                              width={64}
-                              height={64}
-                              style={{ objectFit: 'cover' }}
-                            />
-                          )}
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {track.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {track.artist_name}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Box mt={2}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                icon={<CheckBoxOutlineBlankIcon />}
-                                checkedIcon={<CloseIcon />}
-                                checked={tempCanSinging === 0}
-                                onChange={(e) =>
-                                  setTempCanSinging(e.target.checked ? 0 : null)
-                                }
-                              />
-                            }
-                            label="歌えない"
-                          />
-                        </Box>
-
-                        <Box mt={2}>
-                          <FormLabel>歌いやすさ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              tempCanSinging == null || tempCanSinging === 0
-                                ? ''
-                                : String(tempCanSinging)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                setTempCanSinging(null);
-                              } else {
-                                setTempCanSinging(Number(val));
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </Box>
-
-                        <Box mt={2}>
-                          <FormLabel>思い入れ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              tempFavoriteLevel == null
-                                ? ''
-                                : String(tempFavoriteLevel)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                setTempFavoriteLevel(null);
-                              } else {
-                                setTempFavoriteLevel(Number(val));
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </Box>
-
-                        <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
-                          <Button variant="outlined" onClick={cancelReclassify}>
-                            キャンセル
-                          </Button>
-                          <Button variant="contained" onClick={saveReclassify}>
-                            保存
-                          </Button>
-                        </Box>
-                      </Paper>
-                    );
-                  }
-                })
-              )}
-            </Box>
-          )}
-        </Box>
-
-        {/* PC Layout */}
-        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, color: '#1DB954', fontWeight: 'bold' }} // Spotifyグリーン
-          >
-            曲一覧 (PC Layout)
-          </Typography>
-
-          {/* テーブル表示 */}
-          <TableContainer component={Paper} sx={{ mb: 4 }}>
-            <Table>
-              <TableHead
-                sx={{
-                  backgroundColor: '#A7F3D0', // 緑系の薄い色
-                }}
-              >
-                <TableRow>
-                  <TableCell align="center">画像</TableCell>
-                  <TableCell>曲名</TableCell>
-                  <TableCell>アーティスト</TableCell>
-                  <TableCell align="center">歌えない</TableCell>
-                  <TableCell>歌いやすさ</TableCell>
-                  <TableCell>思い入れ</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tracks.map((track) => {
-                  const updated = updatedTracks.get(track.spotify_track_id);
-                  const canSinging = updated?.can_singing ?? track.can_singing;
-                  const favLevel = updated?.song_favorite_level ?? track.song_favorite_level;
-
-                  return (
-                    <TableRow key={track.spotify_track_id}>
-                      <TableCell align="center">
+                      <Card key={track.spotify_track_id}>
                         {track.image_url && (
-                          <Image
-                            src={track.image_url}
+                          <CardMedia
+                            component="img"
+                            height="200"
+                            image={track.image_url}
                             alt={track.name || 'No Album'}
-                            width={64}
-                            height={64}
-                            style={{ objectFit: 'cover' }}
                           />
                         )}
-                      </TableCell>
-                      <TableCell>{track.name}</TableCell>
-                      <TableCell>{track.artist_name}</TableCell>
-                      <TableCell align="center">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              icon={<CheckBoxOutlineBlankIcon />}
-                              checkedIcon={<CloseIcon />}
-                              checked={canSinging === 0}
-                              onChange={(e) =>
-                                handleCannotSingCheck(
-                                  track.spotify_track_id,
-                                  e.target.checked
-                                )
+                        <CardContent>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {track.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {track.artist_name}
+                          </Typography>
+
+                          <Box mt={2}>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  icon={<CheckBoxOutlineBlankIcon />}
+                                  checkedIcon={<CloseIcon />}
+                                  checked={tempCanSinging === 0}
+                                  onChange={(e) =>
+                                    setTempCanSinging(e.target.checked ? 0 : null)
+                                  }
+                                />
                               }
+                              label="歌えない"
                             />
-                          }
-                          label=""
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormControl>
-                          <FormLabel>歌いやすさ</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              canSinging == null || canSinging === 0
-                                ? ''
-                                : String(canSinging)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                handleCanSingingChange(track.spotify_track_id, null);
-                              } else {
-                                handleCanSingingChange(track.spotify_track_id, Number(val));
+                          </Box>
+
+                          <Box mt={2}>
+                            <FormLabel>歌いやすさ (1~4)</FormLabel>
+                            <RadioGroup
+                              row
+                              value={
+                                tempCanSinging == null || tempCanSinging === 0
+                                  ? ''
+                                  : String(tempCanSinging)
                               }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <FormControl>
-                          <FormLabel>思い入れ</FormLabel>
-                          <RadioGroup
-                            row
-                            value={favLevel == null ? '' : String(favLevel)}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                handleFavoriteLevelChange(track.spotify_track_id, null);
-                              } else {
-                                handleFavoriteLevelChange(track.spotify_track_id, Number(val));
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* 分類完了曲 (再分類) */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-              分類完了曲: {completedTracks.length} 曲
-            </Typography>
-
-            {/* 検索テキストフィールド */}
-            <Box sx={{ maxWidth: 400, mb: 2 }}>
-              <TextField
-                label="曲名で検索"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-              />
-            </Box>
-
-            {/* 分類完了が0の場合 */}
-            {completedTracks.length === 0 && (
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  曲が分類されていません。
-                </Typography>
-              </Paper>
-            )}
-
-            {/* 分類完了がある場合 */}
-            <Box
-              mt={2}
-              display="grid"
-              gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
-              gap={2}
-            >
-              {filteredCompletedTracks.map((track) => {
-                const editing = isEditing(track.spotify_track_id);
-
-                if (!editing) {
-                  return (
-                    <Card
-                      key={track.spotify_track_id}
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => startReclassify(track)}
-                    >
-                      {track.image_url && (
-                        <CardMedia
-                          component="img"
-                          height="200"
-                          image={track.image_url}
-                          alt={track.name || 'No Album'}
-                        />
-                      )}
-                      <CardContent>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {track.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {track.artist_name}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          歌いやすさ:{' '}
-                          {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
-                          <br />
-                          思い入れ: {track.song_favorite_level}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          (クリックで再分類)
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  );
-                } else {
-                  // 編集UI
-                  return (
-                    <Card key={track.spotify_track_id}>
-                      {track.image_url && (
-                        <CardMedia
-                          component="img"
-                          height="200"
-                          image={track.image_url}
-                          alt={track.name || 'No Album'}
-                        />
-                      )}
-                      <CardContent>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {track.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {track.artist_name}
-                        </Typography>
-
-                        <Box mt={2}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                icon={<CheckBoxOutlineBlankIcon />}
-                                checkedIcon={<CloseIcon />}
-                                checked={tempCanSinging === 0}
-                                onChange={(e) =>
-                                  setTempCanSinging(e.target.checked ? 0 : null)
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setTempCanSinging(null);
+                                } else {
+                                  setTempCanSinging(Number(val));
                                 }
-                              />
-                            }
-                            label="歌えない"
-                          />
-                        </Box>
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </Box>
 
-                        <Box mt={2}>
-                          <FormLabel>歌いやすさ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              tempCanSinging == null || tempCanSinging === 0
-                                ? ''
-                                : String(tempCanSinging)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                setTempCanSinging(null);
-                              } else {
-                                setTempCanSinging(Number(val));
+                          <Box mt={2}>
+                            <FormLabel>思い入れ (1~4)</FormLabel>
+                            <RadioGroup
+                              row
+                              value={
+                                tempFavoriteLevel == null
+                                  ? ''
+                                  : String(tempFavoriteLevel)
                               }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </Box>
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setTempFavoriteLevel(null);
+                                } else {
+                                  setTempFavoriteLevel(Number(val));
+                                }
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((num) => (
+                                <FormControlLabel
+                                  key={num}
+                                  value={String(num)}
+                                  control={<Radio />}
+                                  label={String(num)}
+                                />
+                              ))}
+                            </RadioGroup>
+                          </Box>
 
-                        <Box mt={2}>
-                          <FormLabel>思い入れ (1~4)</FormLabel>
-                          <RadioGroup
-                            row
-                            value={
-                              tempFavoriteLevel == null
-                                ? ''
-                                : String(tempFavoriteLevel)
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                setTempFavoriteLevel(null);
-                              } else {
-                                setTempFavoriteLevel(Number(val));
-                              }
-                            }}
-                          >
-                            {[1, 2, 3, 4].map((num) => (
-                              <FormControlLabel
-                                key={num}
-                                value={String(num)}
-                                control={<Radio />}
-                                label={String(num)}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </Box>
-
-                        <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
-                          <Button variant="outlined" onClick={cancelReclassify}>
-                            キャンセル
-                          </Button>
-                          <Button variant="contained" onClick={saveReclassify}>
-                            保存
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  );
-                }
-              })}
+                          <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                            <Button variant="outlined" onClick={cancelReclassify}>
+                              キャンセル
+                            </Button>
+                            <Button variant="contained" onClick={saveReclassify}>
+                              保存
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                })}
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </Container>
+        </Container>
 
-      {/* フッター (未分類タブ or PCレイアウト時のみ表示) */}
-      {(mobileTab === 0 || isDesktop) && (
-        <Paper
-          sx={{
-            position: 'sticky',
-            bottom: 0,
-            py: 2,
-            textAlign: 'center',
-          }}
-          elevation={3}
-        >
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            現在 {updatedCount} 曲入力されています
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={handleSave}
+        {/* フッター (未分類タブ or PCレイアウト時のみ表示) */}
+        {(mobileTab === 0 || isDesktop) && (
+          <Paper
             sx={{
-              backgroundColor: '#1DB954',
-              ':hover': { backgroundColor: '#169e45' },
+              position: 'sticky',
+              bottom: 0,
+              py: 2,
+              textAlign: 'center',
             }}
+            elevation={3}
           >
-            保存
-          </Button>
-        </Paper>
-      )}
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              現在 {updatedCount} 曲入力されています
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              sx={{
+                backgroundColor: '#1DB954',
+                ':hover': { backgroundColor: '#169e45' },
+              }}
+            >
+              保存
+            </Button>
+          </Paper>
+        )}
 
-      {/* Snackbar：保存が完了したら表示 */}
-      <Snackbar
-        open={saveSuccess}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
+        {/* Snackbar：保存が完了したら表示 */}
+        <Snackbar
+          open={saveSuccess}
+          autoHideDuration={3000}
           onClose={handleCloseSnackbar}
-          severity="success"
-          sx={{ width: '100%' }}
-          elevation={6}
-          variant="filled"
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          保存が完了しました！
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="success"
+            sx={{ width: '100%' }}
+            elevation={6}
+            variant="filled"
+          >
+            保存が完了しました！
+          </Alert>
+        </Snackbar>
+      </Box>
+    </>
   );
 }
