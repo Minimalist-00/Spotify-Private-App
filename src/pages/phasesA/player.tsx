@@ -3,13 +3,23 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
+import { signIn, useSession } from 'next-auth/react';
 
 export default function PlayerPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { session_id, phase_id, phase_numbers, directions } = router.query;
 
   // phasesテーブルから select_tracks, select_tracks_user_id を取得
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+
+  // 認証チェック
+    useEffect(() => {
+      // 未認証ならログイン促す（またはリダイレクト）
+      if (status === 'unauthenticated') {
+        signIn('spotify');
+      }
+    }, [status]);
 
   useEffect(() => {
     if (!phase_id) return;
@@ -33,7 +43,7 @@ export default function PlayerPage() {
   const handleGotoDialogue = () => {
     // ページ下部に「対話セクションに移動する」ボタン → /phases/dialog
     router.push({
-      pathname: '/phases/dialog',
+      pathname: '/phasesA/dialog',
       query: {
         session_id,
         phase_id,
@@ -42,6 +52,13 @@ export default function PlayerPage() {
       }
     });
   };
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+  if (!session) {
+    return <div>Please login...</div>;
+  }
 
   return (
     <div className="p-4">

@@ -86,7 +86,7 @@ export default function NewSessionPage() {
       // 3) router.push で /phases に飛ぶ
       //   directions をURLクエリに載せ、タイトル「XXフェーズ目です」と表示したい
       //   session_id, phase_id, directions などをクエリに載せる
-      router.push(`/phases?session_id=${newSession.id}&phase_id=${newPhase.id}&phase_numbers=${newPhase.phase_numbers}&directions=${directions}`);
+      router.push(`/phasesB?session_id=${newSession.id}&phase_id=${newPhase.id}&phase_numbers=${newPhase.phase_numbers}&directions=${directions}`);
     } catch (err) {
       console.error('handleCreateSession error:', err);
     }

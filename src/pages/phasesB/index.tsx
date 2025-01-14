@@ -1,5 +1,3 @@
-// pages/phases/index.tsx
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
@@ -12,8 +10,7 @@ type TrackData = {
   artist_name?: string;
   album_name?: string;
   image_url?: string;
-  can_singing?: number | null;
-  song_favorite_level?: number | null;
+  self_disclosure_level?: number;
 };
 
 export default function PhasesPage() {
@@ -23,62 +20,54 @@ export default function PhasesPage() {
   const phaseNumbersNum = phase_numbers ? Number(phase_numbers) : 0;
   const directionNum = directions ? Number(directions) : 0;
 
-  // sessionsテーブルから userA, userB 取得
-  const [userA, setUserA] = useState<string | null>(null);
-
-  // userA の曲一覧
-  const [myTracks, setMyTracks] = useState<TrackData[]>([]);
-  // 選択されたトラックID
+  const [tracks, setTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
 
   // ================================
-  // 1) session_id が変化したら sessionsテーブルから userA, userB を取得
+  // フェーズごとのself_disclosure_level範囲を設定
+  // ================================
+  const getDisclosureLevelRange = (phase: number): number[] => {
+    if (phase === 1 || phase === 2) return [1];
+    if (phase === 3 || phase === 4) return [1, 2];
+    if (phase === 5 || phase === 6) return [2, 3];
+    if (phase === 7 || phase === 8) return [3, 4];
+    return []; // 不正なフェーズ番号
+  };
+
+  // ================================
+  // フェーズに応じた楽曲を取得
   // ================================
   useEffect(() => {
-    if (!session_id) return;
+    const fetchTracksForPhase = async () => {
+      const levelRange = getDisclosureLevelRange(phaseNumbersNum);
 
-    const fetchSessionUsers = async () => {
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('user_a, user_b')
-        .eq('id', session_id)
-        .single();
-
-      if (error || !data) {
-        console.error('Failed to fetch session user_a', error);
+      if (levelRange.length === 0) {
+        console.error('Invalid phase number');
         return;
       }
-      setUserA(data.user_a);
-    };
 
-    fetchSessionUsers();
-  }, [session_id]);
-
-  // ================================
-  // 2) userA が確定 && directions===1 => userAの曲を fetch
-  // ================================
-  useEffect(() => {
-    if (!userA) return;
-    if (directionNum !== 1) return;
-
-    const fetchMyTracks = async () => {
       const { data, error } = await supabase
         .from('tracks')
         .select('*')
-        .eq('user_id', userA);
+        .in('self_disclosure_level', levelRange);
+
       if (error) {
         console.error('Error fetching tracks:', error);
         return;
       }
-      if (data) {
-        setMyTracks(data as TrackData[]);
+
+      if (data && data.length > 0) {
+        // ランダムに3曲選択
+        const randomTracks = data.sort(() => 0.5 - Math.random()).slice(0, 3);
+        setTracks(randomTracks);
       }
     };
-    fetchMyTracks();
-  }, [userA, directionNum]);
+
+    fetchTracksForPhase();
+  }, [phaseNumbersNum]);
 
   // ================================
-  // 3) 「曲を決定する」ボタン
+  // 「曲を決定する」ボタン
   // ================================
   const handleSelectTrack = async () => {
     if (!phase_id || !selectedTrack) {
@@ -86,49 +75,29 @@ export default function PhasesPage() {
       return;
     }
 
-    // userA の "spotify_user_id" を usersから取得
-    const { data: userAData, error: userAError } = await supabase
-      .from('users')
-      .select('spotify_user_id')
-      .eq('spotify_user_id', userA) 
-      .single();
-    if (userAError || !userAData) {
-      alert('userAのspotify_user_id 取得失敗');
-      return;
-    }
-    const userASpotifyId = userAData.spotify_user_id;
-
-    // phases update
-    const { error: upError } = await supabase
+    const { error } = await supabase
       .from('phases')
       .update({
         select_tracks: selectedTrack,
-        select_tracks_user_id: userASpotifyId,
       })
       .eq('id', phase_id);
 
-    if (upError) {
-      console.error('phases update error:', upError);
+    if (error) {
+      console.error('Error updating phase:', error);
       alert('曲の決定に失敗しました');
       return;
     }
     alert('曲を決定しました');
-    // player画面へ
     router.push({
-      pathname: '/phases/player',
-      query: {
-        session_id,
-        phase_id,
-        phase_numbers,
-        directions,
-      },
+      pathname: '/phasesB/player',
+      query: { session_id, phase_id, phase_numbers, directions },
     });
   };
 
   const handleGotoDialogue = () => {
     // ページ下部に「対話セクションに移動する」ボタン → /phases/dialog
     router.push({
-      pathname: '/phases/dialog',
+      pathname: '/phasesB/dialog',
       query: {
         session_id,
         phase_id,
@@ -139,7 +108,7 @@ export default function PhasesPage() {
   };
 
   // ================================
-  // 追加: phase_numbers=9 のとき => 終了画面
+  // UI分岐
   // ================================
   if (phaseNumbersNum === 9) {
     return (
@@ -152,9 +121,6 @@ export default function PhasesPage() {
     );
   }
 
-  // ================================
-  // UI分岐
-  // ================================
   if (directionNum === 0) {
     return (
       <div className="p-4">
@@ -170,26 +136,30 @@ export default function PhasesPage() {
     );
   }
 
-  // directionNum=1 => 自分が先行
   return (
     <div className="p-4">
       <h1>{phaseNumbersNum} フェーズ目です</h1>
-      <p>あなたが先に曲を選びます。お気に入りの曲を選択してください。</p>
+      <p>以下の推薦曲から1つ選んでください。</p>
 
-      {myTracks.map((track) => (
-        <div key={track.spotify_track_id} className="mb-2 border-b pb-2">
-          <label>
-            <input
-              type="radio"
-              name="selectedTrack"
-              value={track.spotify_track_id}
-              checked={selectedTrack === track.spotify_track_id}
-              onChange={() => setSelectedTrack(track.spotify_track_id)}
-            />
-            {track.name} (ID: {track.spotify_track_id})
-          </label>
-        </div>
-      ))}
+      {tracks.length === 0 ? (
+        <p>推薦曲がありません。</p>
+      ) : (
+        tracks.map((track) => (
+          <div key={track.spotify_track_id} className="mb-2 border-b pb-2">
+            <label>
+              <input
+                type="radio"
+                name="selectedTrack"
+                value={track.spotify_track_id}
+                checked={selectedTrack === track.spotify_track_id}
+                onChange={() => setSelectedTrack(track.spotify_track_id)}
+              />
+              {track.name} (ID: {track.spotify_track_id})
+            </label>
+            <p>{track.artist_name}</p>
+          </div>
+        ))
+      )}
 
       <button
         onClick={handleSelectTrack}
