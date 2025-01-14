@@ -434,7 +434,7 @@ export default function TrackClassificationPage() {
                             flexDirection="row"
                             alignItems="center"
                           >
-                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 5 }}>
+                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 3 }}>
                               歌える自信
                             </FormLabel>
                             {/* 歌えない */}
@@ -474,7 +474,7 @@ export default function TrackClassificationPage() {
                             flexDirection="row"
                             alignItems="center"
                           >
-                            <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 7 }}>
+                            <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 5 }}>
                               思い入れ
                             </FormLabel>
                             <RadioGroup
