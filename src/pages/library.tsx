@@ -435,7 +435,7 @@ export default function TrackClassificationPage() {
                             alignItems="center"
                           >
                             <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 5 }}>
-                              歌いやすさ
+                              歌える自信
                             </FormLabel>
                             {/* 歌えない */}
                             <RadioGroup
@@ -565,7 +565,7 @@ export default function TrackClassificationPage() {
                             </Box>
                           </Box>
                           <Typography variant="body2" sx={{ mt: 1 }}>
-                            歌いやすさ:{' '}
+                            歌える自信:{' '}
                             {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
                             <br />
                             思い入れ: {track.song_favorite_level}
@@ -639,7 +639,7 @@ export default function TrackClassificationPage() {
                               sx={{ mr: 2, mb: 1 }}
                             >
                               <FormLabel sx={{ minWidth: '5rem', fontSize: 14 }}>
-                                歌いやすさ
+                                歌える自信
                               </FormLabel>
                               <RadioGroup
                                 row
