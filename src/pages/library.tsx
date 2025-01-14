@@ -405,41 +405,39 @@ export default function TrackClassificationPage() {
                           alignItems="flex-start"
                           sx={{ flexWrap: 'wrap' }}
                         >
-
+                          <Box
+                            display="flex"
+                            flexDirection="row"
+                            alignItems="center"
+                          >
+                            <FormControlLabel
+                              label="歌えない"
+                              labelPlacement="end"
+                              control={
+                                <Checkbox
+                                  icon={<CheckBoxOutlineBlankIcon />}
+                                  checkedIcon={<CloseIcon />}
+                                  checked={canSinging === 0}
+                                  onChange={(e) =>
+                                    handleCannotSingCheck(
+                                      track.spotify_track_id,
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                              }
+                            />
+                          </Box>
                           {/* 歌いやすさ (1~4) */}
                           <Box
                             display="flex"
                             flexDirection="row"
                             alignItems="center"
-                            sx={{ mr: 1, mb: 1 }}
                           >
-                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14 }}>
+                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 5 }}>
                               歌いやすさ
                             </FormLabel>
                             {/* 歌えない */}
-                            <Box
-                              display="flex"
-                              flexDirection="row"
-                              alignItems="center"
-                            >
-                              <FormControlLabel
-                                label=""
-                                labelPlacement="end"
-                                control={
-                                  <Checkbox
-                                    icon={<CheckBoxOutlineBlankIcon />}
-                                    checkedIcon={<CloseIcon />}
-                                    checked={canSinging === 0}
-                                    onChange={(e) =>
-                                      handleCannotSingCheck(
-                                        track.spotify_track_id,
-                                        e.target.checked
-                                      )
-                                    }
-                                  />
-                                }
-                              />
-                            </Box>
                             <RadioGroup
                               row
                               value={
@@ -475,9 +473,8 @@ export default function TrackClassificationPage() {
                             display="flex"
                             flexDirection="row"
                             alignItems="center"
-                            sx={{ mb: 1 }}
                           >
-                            <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 7.9 }}>
+                            <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 7 }}>
                               思い入れ
                             </FormLabel>
                             <RadioGroup
