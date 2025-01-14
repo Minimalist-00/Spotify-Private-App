@@ -70,7 +70,7 @@ export default function DialogPage() {
           console.log('Created phase:', newPhase);
 
           router.push({
-            pathname: '/phases', // index.tsx
+            pathname: '/phasesA', // index.tsx
             query: {
               session_id,
               phase_id: newPhase.id,           // 質問文: 変更しない
@@ -80,7 +80,7 @@ export default function DialogPage() {
           });
         }else {
           router.push({
-            pathname: '/phases', // index.tsx
+            pathname: '/phasesA', // index.tsx
             query: {
               phase_numbers: newPhaseNum,
             },
@@ -92,7 +92,7 @@ export default function DialogPage() {
     }else{
       // session_id, phase_id は変えず
       router.push({
-        pathname: '/phases', // index.tsx
+        pathname: '/phasesA', // index.tsx
         query: {
           session_id,
           phase_id,           // 質問文: 変更しない
