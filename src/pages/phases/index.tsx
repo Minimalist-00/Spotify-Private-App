@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
+import Link from 'next/link';
 
 type TrackData = {
   spotify_track_id: string;
@@ -22,14 +23,13 @@ export default function PhasesPage() {
   const phaseNumbersNum = phase_numbers ? Number(phase_numbers) : 0;
   const directionNum = directions ? Number(directions) : 0;
 
-  // useState で session情報 や userA を管理
-  const [userA, setUserA] = useState<string | null>(null); // sessions.user_a
-  // const [userB, setUserB] = useState<string | null>(null); // sessions.user_b
+  // sessionsテーブルから userA, userB 取得
+  const [userA, setUserA] = useState<string | null>(null);
 
   // userA の曲一覧
   const [myTracks, setMyTracks] = useState<TrackData[]>([]);
   // 選択されたトラックID
-  const [selectedTrack, setSelectedTrack] = useState<string>('');
+  const [selectedTrack, setSelectedTrack] = useState('');
 
   // ================================
   // 1) session_id が変化したら sessionsテーブルから userA, userB を取得
@@ -38,48 +38,42 @@ export default function PhasesPage() {
     if (!session_id) return;
 
     const fetchSessionUsers = async () => {
-      const { data: sessData, error: sessError } = await supabase
+      const { data, error } = await supabase
         .from('sessions')
         .select('user_a, user_b')
         .eq('id', session_id)
         .single();
 
-      if (sessError || !sessData) {
-        console.error('Failed to fetch session user_a', sessError);
+      if (error || !data) {
+        console.error('Failed to fetch session user_a', error);
         return;
       }
-      setUserA(sessData.user_a);
-      // setUserB(sessData.user_b);
+      setUserA(data.user_a);
     };
 
     fetchSessionUsers();
   }, [session_id]);
 
   // ================================
-  // 2) userA が確定して、さらに directions===1 (自分が先のとき) に tracksをfetch
+  // 2) userA が確定 && directions===1 => userAの曲を fetch
   // ================================
   useEffect(() => {
-    console.log(userA)
-    if (!userA) return;          // userAが取得できていない場合は動作しない
-    if (directionNum !== 1) return;  // 自分が先の場合のみフェッチ
+    if (!userA) return;
+    if (directionNum !== 1) return;
 
     const fetchMyTracks = async () => {
-      // tracks の user_id = userA の曲を取得
       const { data, error } = await supabase
         .from('tracks')
         .select('*')
         .eq('user_id', userA);
-
       if (error) {
-        console.error('fetch tracks error', error);
+        console.error('Error fetching tracks:', error);
         return;
       }
-      console.log(data.length)
       if (data) {
         setMyTracks(data as TrackData[]);
       }
     };
-
     fetchMyTracks();
   }, [userA, directionNum]);
 
@@ -92,21 +86,19 @@ export default function PhasesPage() {
       return;
     }
 
-    // userA の "spotify_user_id" を usersテーブルから取得
-    // userA (sessions.user_a) は "users.id" を指す想定
+    // userA の "spotify_user_id" を usersから取得
     const { data: userAData, error: userAError } = await supabase
       .from('users')
       .select('spotify_user_id')
-      .eq('spotify_user_id', userA) // userA は users.id 
+      .eq('spotify_user_id', userA) 
       .single();
-
     if (userAError || !userAData) {
-      alert('自分のspotify_user_idが取得できません');
+      alert('userAのspotify_user_id 取得失敗');
       return;
     }
     const userASpotifyId = userAData.spotify_user_id;
 
-    // phases UPDATE
+    // phases update
     const { error: upError } = await supabase
       .from('phases')
       .update({
@@ -116,27 +108,69 @@ export default function PhasesPage() {
       .eq('id', phase_id);
 
     if (upError) {
-      console.error('Error updating phases:', upError);
+      console.error('phases update error:', upError);
       alert('曲の決定に失敗しました');
       return;
     }
     alert('曲を決定しました');
+    // player画面へ
+    router.push({
+      pathname: '/phases/player',
+      query: {
+        session_id,
+        phase_id,
+        phase_numbers,
+        directions,
+      },
+    });
+  };
+
+  const handleGotoDialogue = () => {
+    // ページ下部に「対話セクションに移動する」ボタン → /phases/dialog
+    router.push({
+      pathname: '/phases/dialog',
+      query: {
+        session_id,
+        phase_id,
+        phase_numbers,
+        directions
+      }
+    });
   };
 
   // ================================
-  // UI
+  // 追加: phase_numbers=9 のとき => 終了画面
   // ================================
-  if (directionNum === 0) {
-    // 相手が先 => "相手の選択を待ってください"
+  if (phaseNumbersNum === 9) {
     return (
-      <div className="p-4">
-        <h1>{phaseNumbersNum} フェーズ目です</h1>
-        <p>相手の選択を待ってください。</p>
+      <div className="p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">ご協力ありがとうございました</h1>
+        <Link href="/" className="text-blue-500 underline">
+          トップに戻る
+        </Link>
       </div>
     );
   }
 
-  // directionNum===1 => 自分が先に選曲
+  // ================================
+  // UI分岐
+  // ================================
+  if (directionNum === 0) {
+    return (
+      <div className="p-4">
+        <h1>{phaseNumbersNum} フェーズ目です</h1>
+        <p>相手の選択した楽曲を聴きましょう。</p>
+        <button
+          onClick={handleGotoDialogue}
+          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          対話セクションに移動する
+        </button>
+      </div>
+    );
+  }
+
+  // directionNum=1 => 自分が先行
   return (
     <div className="p-4">
       <h1>{phaseNumbersNum} フェーズ目です</h1>
