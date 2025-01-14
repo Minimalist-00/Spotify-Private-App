@@ -24,7 +24,7 @@ export default function PhasesPage() {
 
   // useState で session情報 や userA を管理
   const [userA, setUserA] = useState<string | null>(null); // sessions.user_a
-  const [userB, setUserB] = useState<string | null>(null); // sessions.user_b
+  // const [userB, setUserB] = useState<string | null>(null); // sessions.user_b
 
   // userA の曲一覧
   const [myTracks, setMyTracks] = useState<TrackData[]>([]);
@@ -49,7 +49,7 @@ export default function PhasesPage() {
         return;
       }
       setUserA(sessData.user_a);
-      setUserB(sessData.user_b);
+      // setUserB(sessData.user_b);
     };
 
     fetchSessionUsers();
@@ -78,7 +78,6 @@ export default function PhasesPage() {
       if (data) {
         setMyTracks(data as TrackData[]);
       }
-      console.log(myTracks.length)
     };
 
     fetchMyTracks();
