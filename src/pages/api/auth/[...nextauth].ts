@@ -147,6 +147,8 @@ export const authOptions: NextAuthOptions = {
             album_name: track.album?.name ?? '',
             image_url: track.album?.images?.[0]?.url ?? '',
             popularity: track.popularity,
+            song_favorite_level: null,
+            can_singing: null,
           }));
 
           // Supabaseに upsert
