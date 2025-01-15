@@ -21,7 +21,7 @@ function computeSelfDisclosureLevel(
 
   if (!hasAffection && !hasConfidence && !isHighPopularity) {
     return 0; // 歌うべきではない
-  } else if (!hasAffection && hasConfidence && isHighPopularity) {
+  } else if (!hasAffection && hasConfidence && isHighPopularity || hasConfidence === 0) {
     return 1;
   } else if (!hasAffection && !hasConfidence && isHighPopularity) {
     return 1;
