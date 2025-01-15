@@ -1,9 +1,8 @@
-// pages/phases/index.tsx
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type TrackData = {
   spotify_track_id: string;
@@ -23,17 +22,10 @@ export default function PhasesPage() {
   const phaseNumbersNum = phase_numbers ? Number(phase_numbers) : 0;
   const directionNum = directions ? Number(directions) : 0;
 
-  // sessionsテーブルから userA, userB 取得
   const [userA, setUserA] = useState<string | null>(null);
-
-  // userA の曲一覧
   const [myTracks, setMyTracks] = useState<TrackData[]>([]);
-  // 選択されたトラックID
   const [selectedTrack, setSelectedTrack] = useState('');
 
-  // ================================
-  // 1) session_id が変化したら sessionsテーブルから userA, userB を取得
-  // ================================
   useEffect(() => {
     if (!session_id) return;
 
@@ -54,9 +46,6 @@ export default function PhasesPage() {
     fetchSessionUsers();
   }, [session_id]);
 
-  // ================================
-  // 2) userA が確定 && directions===1 => userAの曲を fetch
-  // ================================
   useEffect(() => {
     if (!userA) return;
     if (directionNum !== 1) return;
@@ -77,28 +66,24 @@ export default function PhasesPage() {
     fetchMyTracks();
   }, [userA, directionNum]);
 
-  // ================================
-  // 3) 「曲を決定する」ボタン
-  // ================================
   const handleSelectTrack = async () => {
     if (!phase_id || !selectedTrack) {
       alert('曲が選択されていません');
       return;
     }
 
-    // userA の "spotify_user_id" を usersから取得
     const { data: userAData, error: userAError } = await supabase
       .from('users')
       .select('spotify_user_id')
-      .eq('spotify_user_id', userA) 
+      .eq('spotify_user_id', userA)
       .single();
+
     if (userAError || !userAData) {
       alert('userAのspotify_user_id 取得失敗');
       return;
     }
     const userASpotifyId = userAData.spotify_user_id;
 
-    // phases update
     const { error: upError } = await supabase
       .from('phases')
       .update({
@@ -113,7 +98,6 @@ export default function PhasesPage() {
       return;
     }
     alert('曲を決定しました');
-    // player画面へ
     router.push({
       pathname: '/phasesA/player',
       query: {
@@ -126,21 +110,17 @@ export default function PhasesPage() {
   };
 
   const handleGotoDialogue = () => {
-    // ページ下部に「対話セクションに移動する」ボタン → /phases/dialog
     router.push({
       pathname: '/phasesA/dialog',
       query: {
         session_id,
         phase_id,
         phase_numbers,
-        directions
-      }
+        directions,
+      },
     });
   };
 
-  // ================================
-  // 追加: phase_numbers=9 のとき => 終了画面
-  // ================================
   if (phaseNumbersNum === 9) {
     return (
       <div className="p-4 text-center">
@@ -152,17 +132,14 @@ export default function PhasesPage() {
     );
   }
 
-  // ================================
-  // UI分岐
-  // ================================
   if (directionNum === 0) {
     return (
       <div className="p-4">
-        <h1>{phaseNumbersNum} フェーズ目です</h1>
-        <p>相手の選択した楽曲を聴きましょう。</p>
+        <h1 className="text-2xl font-semibold mb-4">{phaseNumbersNum} フェーズ目です</h1>
+        <p className="mb-4">相手の選択した楽曲を聴きましょう。</p>
         <button
           onClick={handleGotoDialogue}
-          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
         >
           対話セクションに移動する
         </button>
@@ -170,34 +147,56 @@ export default function PhasesPage() {
     );
   }
 
-  // directionNum=1 => 自分が先行
   return (
     <div className="p-4">
-      <h1>{phaseNumbersNum} フェーズ目です</h1>
-      <p>あなたが先に曲を選びます。お気に入りの曲を選択してください。</p>
+      <h1 className="text-2xl font-semibold mb-4">{phaseNumbersNum} フェーズ目です</h1>
+      <p className="mb-4">以下の推薦曲から1つ選んでください。</p>
 
-      {myTracks.map((track) => (
-        <div key={track.spotify_track_id} className="mb-2 border-b pb-2">
-          <label>
-            <input
-              type="radio"
-              name="selectedTrack"
-              value={track.spotify_track_id}
-              checked={selectedTrack === track.spotify_track_id}
-              onChange={() => setSelectedTrack(track.spotify_track_id)}
-            />
-            {track.name}
-          </label>
-          <p>{track.artist_name}</p>
+      {myTracks.length === 0 ? (
+        <p className="text-center">推薦曲がありません。</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {myTracks.map((track) => (
+            <div
+              key={track.spotify_track_id}
+              className={`relative flex border rounded-lg p-4 shadow ${
+                selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'
+              }`}
+              onClick={() => setSelectedTrack(track.spotify_track_id)}
+            >
+              {track.image_url && (
+                <Image
+                  src={track.image_url}
+                  alt={track.name}
+                  width={100}
+                  height={100}
+                  className="object-cover rounded-md"
+                />
+              )}
+              <div className="ml-4">
+                <h2 className="font-semibold text-lg">{track.name}</h2>
+                <p className="text-sm text-gray-600">{track.album_name}</p>
+                <p className="text-sm text-gray-500">{track.artist_name}</p>
+              </div>
+              {selectedTrack === track.spotify_track_id && (
+                <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
+                  選択中
+                </span>
+              )}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
-      <button
-        onClick={handleSelectTrack}
-        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-      >
-        曲を決定する
-      </button>
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4">
+        <button
+          onClick={handleSelectTrack}
+          className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          disabled={!selectedTrack}
+        >
+          曲を決定する
+        </button>
+      </div>
     </div>
   );
 }
