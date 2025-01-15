@@ -179,8 +179,8 @@ export default function PhasesPage() {
                   <Image
                     src={track.image_url}
                     alt={track.name}
-                    width={100}
-                    height={100}
+                    width={70}
+                    height={70}
                     className="object-cover rounded-md"
                   />
                 )}

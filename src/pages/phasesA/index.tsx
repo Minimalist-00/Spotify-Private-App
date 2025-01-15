@@ -150,12 +150,12 @@ export default function PhasesPage() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-semibold mb-4">{phaseNumbersNum} フェーズ目です</h1>
-      <p className="mb-4">以下の推薦曲から1つ選んでください。</p>
+      <p className="mb-4">以下の楽曲から1つ選んでください。</p>
 
       {myTracks.length === 0 ? (
-        <p className="text-center">推薦曲がありません。</p>
+        <p className="text-center">楽曲がありません。</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {myTracks.map((track) => (
             <div
               key={track.spotify_track_id}
@@ -168,8 +168,8 @@ export default function PhasesPage() {
                 <Image
                   src={track.image_url}
                   alt={track.name}
-                  width={100}
-                  height={100}
+                  width={70}
+                  height={70}
                   className="object-cover rounded-md"
                 />
               )}
