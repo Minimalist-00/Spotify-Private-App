@@ -20,8 +20,34 @@ export default function PhasesPage() {
   const phaseNumbersNum = phase_numbers ? Number(phase_numbers) : 0;
   const directionNum = directions ? Number(directions) : 0;
 
+  // sessionsテーブルから userA, userB 取得
+  const [userA, setUserA] = useState<string | null>(null);
+
   const [tracks, setTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
+
+  // ================================
+    // 1) session_id が変化したら sessionsテーブルから userA, userB を取得
+    // ================================
+    useEffect(() => {
+      if (!session_id) return;
+  
+      const fetchSessionUsers = async () => {
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('user_a, user_b')
+          .eq('id', session_id)
+          .single();
+  
+        if (error || !data) {
+          console.error('Failed to fetch session user_a', error);
+          return;
+        }
+        setUserA(data.user_a);
+      };
+  
+      fetchSessionUsers();
+    }, [session_id]);
 
   // ================================
   // フェーズごとのself_disclosure_level範囲を設定
@@ -38,6 +64,9 @@ export default function PhasesPage() {
   // フェーズに応じた楽曲を取得
   // ================================
   useEffect(() => {
+    if (!userA) return;
+    if (directionNum !== 1) return;
+
     const fetchTracksForPhase = async () => {
       const levelRange = getDisclosureLevelRange(phaseNumbersNum);
 
@@ -49,6 +78,7 @@ export default function PhasesPage() {
       const { data, error } = await supabase
         .from('tracks')
         .select('*')
+        .eq('user_id', userA)
         .in('self_disclosure_level', levelRange);
 
       if (error) {
@@ -64,7 +94,7 @@ export default function PhasesPage() {
     };
 
     fetchTracksForPhase();
-  }, [phaseNumbersNum]);
+  }, [userA, directionNum, phaseNumbersNum]);
 
   // ================================
   // 「曲を決定する」ボタン
@@ -75,10 +105,23 @@ export default function PhasesPage() {
       return;
     }
 
+    // userA の "spotify_user_id" を usersから取得
+    const { data: userAData, error: userAError } = await supabase
+      .from('users')
+      .select('spotify_user_id')
+      .eq('spotify_user_id', userA)
+      .single();
+    if (userAError || !userAData) {
+      alert('userAのspotify_user_id 取得失敗');
+      return;
+    }
+    const userASpotifyId = userAData.spotify_user_id;
+
     const { error } = await supabase
       .from('phases')
       .update({
         select_tracks: selectedTrack,
+        select_tracks_user_id: userASpotifyId,
       })
       .eq('id', phase_id);
 
@@ -154,7 +197,7 @@ export default function PhasesPage() {
                 checked={selectedTrack === track.spotify_track_id}
                 onChange={() => setSelectedTrack(track.spotify_track_id)}
               />
-              {track.name} (ID: {track.spotify_track_id})
+              {track.name}
             </label>
             <p>{track.artist_name}</p>
           </div>

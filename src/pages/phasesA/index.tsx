@@ -186,8 +186,9 @@ export default function PhasesPage() {
               checked={selectedTrack === track.spotify_track_id}
               onChange={() => setSelectedTrack(track.spotify_track_id)}
             />
-            {track.name} (ID: {track.spotify_track_id})
+            {track.name}
           </label>
+          <p>{track.artist_name}</p>
         </div>
       ))}
 
