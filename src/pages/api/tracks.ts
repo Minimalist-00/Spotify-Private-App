@@ -19,9 +19,9 @@ function computeSelfDisclosureLevel(
   const hasConfidence = (canSinging && canSinging >= 3);
   const isHighPopularity = (popularity && popularity > 50);
 
-  if (!hasAffection && !hasConfidence && !isHighPopularity) {
+  if ((!hasAffection && !hasConfidence && !isHighPopularity) || hasConfidence === 0) {
     return 0; // 歌うべきではない
-  } else if (!hasAffection && hasConfidence && isHighPopularity || hasConfidence === 0) {
+  } else if (!hasAffection && hasConfidence && isHighPopularity) {
     return 1;
   } else if (!hasAffection && !hasConfidence && isHighPopularity) {
     return 1;
