@@ -45,14 +45,13 @@ interface PlaybackState {
   };
 }
 
-/* 
+/*
   Spotify Web API から返るトラック情報用の型
   artists: Array<SpotifyArtist>
   album: { images: ... }
 */
 interface SpotifyArtist {
   name: string;
-  // 必要に応じて追加
 }
 
 interface SpotifyAlbumImage {
@@ -61,14 +60,12 @@ interface SpotifyAlbumImage {
 
 interface SpotifyAlbum {
   images: SpotifyAlbumImage[];
-  // 必要に応じて追加
 }
 
 interface SpotifyTrack {
   name: string;
   artists: SpotifyArtist[];
   album: SpotifyAlbum;
-  // 必要に応じて追加
 }
 
 declare global {
@@ -135,7 +132,7 @@ export default function PlayerPage() {
 
   /**
    * (B) selectedTrackId が設定されたら、
-   *     Spotify Web API からトラック詳細を取得して表示用の情報をセット
+   *     Spotify Web API からトラック情報を取得して表示用の情報をセット
    */
   useEffect(() => {
     if (!selectedTrackId || !session?.accessToken) return;
@@ -154,11 +151,9 @@ export default function PlayerPage() {
           console.error('Failed to fetch track info:', response.statusText);
           return;
         }
-        // SpotifyTrack 型で型アサーション
         const trackData = (await response.json()) as SpotifyTrack;
-
         setTrackName(trackData.name);
-        setTrackArtists(trackData.artists.map((a: SpotifyArtist) => a.name).join(', '));
+        setTrackArtists(trackData.artists.map((a) => a.name).join(', '));
         setAlbumImage(trackData.album.images?.[0]?.url || '');
       } catch (err) {
         console.error('Error fetching track info:', err);
@@ -167,7 +162,7 @@ export default function PlayerPage() {
     fetchTrackInfo();
   }, [selectedTrackId, session?.accessToken]);
 
-  // SpotifyのWeb Playback SDKをscriptで読み込み
+  // (C) SpotifyのWeb Playback SDKを一度だけ読み込み
   useEffect(() => {
     const existingScriptTag = document.getElementById('spotify-player');
     if (!existingScriptTag) {
@@ -179,69 +174,84 @@ export default function PlayerPage() {
     }
   }, []);
 
-  // SDKロード後にプレイヤーを初期化
+  /**
+   * (D) SDKロード後にプレイヤーを初期化
+   *     コンポーネントアンマウント時には disconnect()
+   */
   useEffect(() => {
     if (!session?.accessToken) return;
 
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      if (!window.Spotify) return;
-      const newPlayer = new window.Spotify.Player({
-        name: 'My Web Player',
-        getOAuthToken: (cb: (token: string) => void) => {
-          cb(session.accessToken as string);
-        },
-        volume: 0.5,
-      });
+    // コールバックが既に設定されていない場合のみ設定する
+    if (!window.onSpotifyWebPlaybackSDKReady) {
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        if (!window.Spotify) return;
+        const newPlayer = new window.Spotify.Player({
+          name: 'My Web Player',
+          getOAuthToken: (cb: (token: string) => void) => {
+            // 最新のアクセストークンを渡す
+            cb(session.accessToken as string);
+          },
+          volume: 0.5,
+        });
 
-      // (1) デバイスが ready のとき
-      newPlayer.addListener('ready', (arg) => {
-        if (!arg) return;
-        const event = arg as PlayerReadyEvent;
-        console.log('Ready with Device ID', event.device_id);
-        setDeviceId(event.device_id);
-      });
+        // デバイスが ready のとき
+        newPlayer.addListener('ready', (arg) => {
+          if (!arg) return;
+          const event = arg as PlayerReadyEvent;
+          console.log('Ready with Device ID', event.device_id);
+          setDeviceId(event.device_id);
+        });
 
-      // (2) デバイスが not_ready のとき
-      newPlayer.addListener('not_ready', (arg) => {
-        if (!arg) return;
-        const event = arg as PlayerNotReadyEvent;
-        console.log('Device ID has gone offline', event.device_id);
-      });
+        // デバイスが not_ready のとき
+        newPlayer.addListener('not_ready', (arg) => {
+          if (!arg) return;
+          const event = arg as PlayerNotReadyEvent;
+          console.log('Device ID has gone offline', event.device_id);
+        });
 
-      // (3) 再生中の状態が変わるたびに呼ばれる
-      newPlayer.addListener('player_state_changed', (state) => {
-        if (!state) return;
-        const ps = state as PlaybackState;
+        // 再生状態が変わるたびに呼ばれる
+        newPlayer.addListener('player_state_changed', (state) => {
+          if (!state) return;
+          const ps = state as PlaybackState;
+          setIsPaused(ps.paused);
+          setPosition(ps.position);
+          setDuration(ps.duration);
 
-        setIsPaused(ps.paused);
-        setPosition(ps.position);
-        setDuration(ps.duration);
+          // 曲が切り替わった場合にトラック情報を上書き
+          const currentTrack = ps.track_window.current_track;
+          setTrackName(currentTrack.name);
+          setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
+          setAlbumImage(currentTrack.album.images?.[0]?.url || '');
+        });
 
-        // 曲が切り替わった場合にトラック情報を上書き
-        const currentTrack = ps.track_window.current_track;
-        setTrackName(currentTrack.name);
-        setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
-        setAlbumImage(currentTrack.album.images?.[0]?.url || '');
-      });
+        newPlayer.connect();
+        setPlayer(newPlayer);
+      };
+    }
 
-      newPlayer.connect();
-      setPlayer(newPlayer);
+    // アンマウント時にdisconnect
+    return () => {
+      if (player) {
+        player.disconnect();
+      }
     };
-  }, [session?.accessToken]);
+  }, [session?.accessToken, player]);
 
   /**
-   * (C) setInterval で 1秒おきにプレイヤーの状態を取得し、
-   *     position / duration / isPaused を更新してスライダーを連動
+   * (E) setInterval で 1秒おきにプレイヤーの状態を取得し、
+   *     isPaused が false (再生中) のときだけ position/duration を更新
    */
   useEffect(() => {
     if (!player) return;
     const interval = setInterval(async () => {
       try {
-        const state = await player.getCurrentState?.();
-        if (state) {
-          setIsPaused(state.paused);
-          setPosition(state.position);
-          setDuration(state.duration);
+        // 再生中のみポーリングして現在位置を更新
+        if (!isPaused) {
+          const state = await player.getCurrentState?.();
+          if (state) {
+            setPosition(state.position);
+            setDuration(state.duration);
+          }
         }
       } catch (err) {
         console.error('Error polling player state:', err);
@@ -249,7 +259,7 @@ export default function PlayerPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [player]);
+  }, [player, isPaused]);
 
   // 曲の再生
   const handlePlay = async () => {
@@ -270,6 +280,16 @@ export default function PlayerPage() {
     }
   };
 
+  // 一時停止
+  const handlePause = async () => {
+    if (!player) return;
+    try {
+      await player.pause();
+    } catch (error) {
+      console.error('Error pausing track:', error);
+    }
+  };
+
   // スライダーを動かしてシーク
   const handleSeek = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!player) return;
@@ -282,13 +302,7 @@ export default function PlayerPage() {
   };
 
   // ページ遷移
-  const handleGotoDialogue = async () => {
-    if (!player) return;
-    try {
-      await player.pause();
-    } catch (error) {
-      console.error('Error pausing track:', error);
-    }
+  const handleGotoDialogue = () => {
     router.push({
       pathname: '/phasesA/dialog',
       query: {
@@ -326,6 +340,12 @@ export default function PlayerPage() {
           className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
         >
           再生
+        </button>
+        <button
+          onClick={handlePause}
+          className="mt-2 ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          一時停止
         </button>
       </div>
 
