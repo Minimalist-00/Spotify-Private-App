@@ -13,6 +13,9 @@ const scopes = [
   'playlist-read-collaborative',
   'user-read-recently-played',
   'user-read-email',
+  'streaming',                 // フル再生に必要
+  'user-read-playback-state',  // 再生状態の取得に必要
+  'user-modify-playback-state' // 再生制御に必要
 ].join(' ');
 
 async function fetchSpotifyProfile(accessToken: string) {
