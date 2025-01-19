@@ -1,9 +1,8 @@
 // src/pages/ipad/phaseB/dialog.tsx
 
-import React from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/utils/supabaseClient';
 import PageTimer from '@/components/pageTimer';
+import { supabase } from '@/utils/supabaseClient';
+import { useRouter } from 'next/router';
 
 export default function DialogPage() {
   const router = useRouter();
@@ -20,7 +19,7 @@ export default function DialogPage() {
     const newDirections = urlDirections === 2 ? 1 : 2; // 反転
     let newPhaseNum = phaseNum;                     // デフォルトは変更なし
 
-    if (urlDirections === 1 ) {
+    if (urlDirections === 1) {
       try {
         const { data: phasesData, error: phasesError } = await supabase
           .from('phases')
@@ -56,7 +55,7 @@ export default function DialogPage() {
       } catch (err) {
         console.error('handleCreateSession error:', err);
       }
-    }else{
+    } else {
       newPhaseNum = phaseNum + 1;
 
       const { data: phasesData, error: phasesError } = await supabase
@@ -80,7 +79,7 @@ export default function DialogPage() {
 
       const newPhase = phasesData[0];
       console.log('Created phase:', newPhase);
-      
+
       router.push({
         pathname: '/ipad/phaseB/forms', // index.tsx
         query: {
@@ -97,14 +96,14 @@ export default function DialogPage() {
     return (
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
-          <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <h1 className="text-3xl font-bold mb-6">対話をしてください</h1>
           <PageTimer />
           <div className="mt-6">
             <button
               onClick={handleNext}
               className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
             >
-              後半のユーザーの曲選択に移る
+              後攻のユーザーの曲選択画面に移動する
             </button>
           </div>
         </div>
@@ -116,7 +115,7 @@ export default function DialogPage() {
     return (
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
-          <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <h1 className="text-3xl font-bold mb-6">対話をしてください</h1>
           <PageTimer />
           <div className="mt-6">
             <button
