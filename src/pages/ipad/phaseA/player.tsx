@@ -1,3 +1,5 @@
+// src/pages/ipad/phaseA/player.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
@@ -341,58 +343,60 @@ export default function PlayerPage() {
   }
 
   return (
-    <div className="p-4">
-      <h1>曲の再生ページ</h1>
-      <p>状態: {isPaused ? '停止中' : '再生中'}</p>
-
-      <div className="mt-4">
+    <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
+      <h1 className="text-3xl font-bold mb-4">曲の再生ページ</h1>
+      <p className="text-xl mb-4">
+        状態: {isPaused ? '停止中' : '再生中'}
+      </p>
+  
+      <div className="mb-4">
         <button
           onClick={handlePlay}
-          className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="px-6 py-3 bg-green-600 text-white text-lg rounded hover:bg-green-700"
         >
           再生
         </button>
       </div>
-
+  
       {/* 楽曲情報の表示 */}
       {trackName && (
-        <div className="mt-6 flex items-center">
+        <div className="flex items-center mb-4">
           {albumImage && (
             <Image
               src={albumImage}
               alt="Album Cover"
-              width={80}
-              height={80}
-              style={{ width: '80px', height: '80px', marginRight: '1rem' }}
+              width={120}
+              height={120}
+              className="mr-4 rounded"
             />
           )}
           <div>
-            <p className="font-bold">{trackName}</p>
-            <p className="text-sm text-gray-500">{trackArtists}</p>
+            <p className="text-2xl font-bold">{trackName}</p>
+            <p className="text-lg text-gray-600">{trackArtists}</p>
           </div>
         </div>
       )}
-
+  
       {/* 再生位置とスライダー */}
-      <div className="mt-4">
+      <div className="w-full mb-4">
         <input
           type="range"
           min={0}
           max={duration}
           value={position}
           onChange={handleSeek}
-          style={{ width: '100%' }}
+          className="w-full"
         />
-        <div className="flex justify-between text-sm mt-1">
+        <div className="flex justify-between text-lg mt-1">
           <span>{formatTime(position)}</span>
           <span>{formatTime(duration)}</span>
         </div>
       </div>
-
-      <div className="mt-6">
+  
+      <div className="mt-auto">
         <button
           onClick={handleGotoDialogue}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full py-4 bg-blue-600 text-white text-2xl rounded hover:bg-blue-700"
         >
           対話セクションに移動する
         </button>

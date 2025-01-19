@@ -1,3 +1,5 @@
+// src/pages/ipad/phaseA/index.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
@@ -175,61 +177,71 @@ export default function PhasesPage() {
 
   if (phaseNumbersNum === 9) {
     return (
-      <div className="p-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">ご協力ありがとうございました</h1>
-        <Link href="/" className="text-blue-500 underline">
-          トップに戻る
-        </Link>
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
+          <h1 className="text-3xl font-bold mb-6">ご協力ありがとうございました</h1>
+          <Link href="/" className="text-xl text-blue-600 underline">
+            トップに戻る
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (directionNum === 1) {
     return (
-      <div className="p-4">
-        <h1 className="text-2xl font-semibold mb-4">{phaseNumbersNum} フェーズ目です</h1>
-        <p className="mb-4">以下の楽曲から1つ選んでください。</p>
-  
-        {userATracks.length === 0 ? (
-          <p className="text-center">楽曲がありません。</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-            {userATracks.map((track) => (
-              <div
-                key={track.spotify_track_id}
-                className={`relative flex border rounded-lg p-4 shadow ${
-                  selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'
-                }`}
-                onClick={() => setSelectedTrack(track.spotify_track_id)}
-              >
-                {track.image_url && (
-                  <Image
-                    src={track.image_url}
-                    alt={track.name}
-                    width={70}
-                    height={70}
-                    className="object-cover rounded-md"
-                  />
-                )}
-                <div className="ml-4">
-                  <h2 className="font-semibold text-lg">{track.name}</h2>
-                  <p className="text-sm text-gray-600">{track.album_name}</p>
-                  <p className="text-sm text-gray-500">{track.artist_name}</p>
+      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
+        <div className="flex-grow overflow-auto">
+          <h1 className="text-3xl font-bold mb-4 text-center">
+            {phaseNumbersNum} フェーズ目です
+          </h1>
+          <p className="mb-6 text-center text-lg">
+            以下の楽曲から1つ選んでください。
+          </p>
+    
+          {userATracks.length === 0 ? (
+            <p className="text-center text-xl">楽曲がありません。</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {userATracks.map((track) => (
+                <div
+                  key={track.spotify_track_id}
+                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
+                    selectedTrack === track.spotify_track_id
+                      ? 'border-green-500'
+                      : 'border-gray-300'
+                  }`}
+                  onClick={() => setSelectedTrack(track.spotify_track_id)}
+                >
+                  {track.image_url && (
+                    <Image
+                      src={track.image_url}
+                      alt={track.name}
+                      width={70}
+                      height={70}
+                      className="object-cover rounded-md"
+                    />
+                  )}
+                  <div className="ml-4">
+                    <h2 className="font-semibold text-lg">{track.name}</h2>
+                    <p className="text-sm text-gray-600">{track.album_name}</p>
+                    <p className="text-sm text-gray-500">{track.artist_name}</p>
+                  </div>
+                  {selectedTrack === track.spotify_track_id && (
+                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
+                      選択中
+                    </span>
+                  )}
                 </div>
-                {selectedTrack === track.spotify_track_id && (
-                  <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
-                    選択中
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-  
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4">
+              ))}
+            </div>
+          )}
+        </div>
+    
+        <div className="mt-4">
           <button
             onClick={handleSelectUserATracks}
-            className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
             disabled={!selectedTrack}
           >
             曲を決定する
@@ -241,50 +253,58 @@ export default function PhasesPage() {
 
   if (directionNum === 2) {
     return (
-      <div className="p-4">
-        <h1 className="text-2xl font-semibold mb-4">{phaseNumbersNum} フェーズ目です</h1>
-        <p className="mb-4">以下の楽曲から1つ選んでください。</p>
-  
-        {userBTracks.length === 0 ? (
-          <p className="text-center">楽曲がありません。</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-            {userBTracks.map((track) => (
-              <div
-                key={track.spotify_track_id}
-                className={`relative flex border rounded-lg p-4 shadow ${
-                  selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'
-                }`}
-                onClick={() => setSelectedTrack(track.spotify_track_id)}
-              >
-                {track.image_url && (
-                  <Image
-                    src={track.image_url}
-                    alt={track.name}
-                    width={70}
-                    height={70}
-                    className="object-cover rounded-md"
-                  />
-                )}
-                <div className="ml-4">
-                  <h2 className="font-semibold text-lg">{track.name}</h2>
-                  <p className="text-sm text-gray-600">{track.album_name}</p>
-                  <p className="text-sm text-gray-500">{track.artist_name}</p>
+      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
+        <div className="flex-grow overflow-auto">
+          <h1 className="text-3xl font-bold mb-4 text-center">
+            {phaseNumbersNum} フェーズ目です
+          </h1>
+          <p className="mb-6 text-center text-lg">
+            以下の楽曲から1つ選んでください。
+          </p>
+    
+          {userBTracks.length === 0 ? (
+            <p className="text-center text-xl">楽曲がありません。</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {userBTracks.map((track) => (
+                <div
+                  key={track.spotify_track_id}
+                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
+                    selectedTrack === track.spotify_track_id
+                      ? 'border-green-500'
+                      : 'border-gray-300'
+                  }`}
+                  onClick={() => setSelectedTrack(track.spotify_track_id)}
+                >
+                  {track.image_url && (
+                    <Image
+                      src={track.image_url}
+                      alt={track.name}
+                      width={70}
+                      height={70}
+                      className="object-cover rounded-md"
+                    />
+                  )}
+                  <div className="ml-4">
+                    <h2 className="font-semibold text-lg">{track.name}</h2>
+                    <p className="text-sm text-gray-600">{track.album_name}</p>
+                    <p className="text-sm text-gray-500">{track.artist_name}</p>
+                  </div>
+                  {selectedTrack === track.spotify_track_id && (
+                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
+                      選択中
+                    </span>
+                  )}
                 </div>
-                {selectedTrack === track.spotify_track_id && (
-                  <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
-                    選択中
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-  
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4">
+              ))}
+            </div>
+          )}
+        </div>
+    
+        <div className="mt-4">
           <button
             onClick={handleSelectUserBTracks}
-            className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
             disabled={!selectedTrack}
           >
             曲を決定する

@@ -1,4 +1,4 @@
-// pages/phases/dialog.tsx
+// src/pages/ipad/phaseA/dialog.tsx
 
 import React from 'react';
 import { useRouter } from 'next/router';
@@ -94,15 +94,17 @@ export default function DialogPage() {
 
   if (urlDirections === 1) {
     return (
-      <div className="p-4">
-        <h1>対話をしてください。</h1>
-        <div className="mt-6">
-          <button
-            onClick={handleNext}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-          >
-          後半のユーザーの曲選択に移る
-          </button>
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
+          <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <div className="mt-6">
+            <button
+              onClick={handleNext}
+              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+            >
+              後半のユーザーの曲選択に移る
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -110,15 +112,17 @@ export default function DialogPage() {
 
   if (urlDirections === 2) {
     return (
-      <div className="p-4">
-        <h1>対話をしてください。</h1>
-        <div className="mt-6">
-          <button
-            onClick={handleNext}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-          >
-          評価に移る
-          </button>
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
+          <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <div className="mt-6">
+            <button
+              onClick={handleNext}
+              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+            >
+              評価に移る
+            </button>
+          </div>
         </div>
       </div>
     );

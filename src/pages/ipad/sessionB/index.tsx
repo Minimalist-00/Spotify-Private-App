@@ -1,3 +1,5 @@
+// src/pages/ipad/sessionB/index.tsx
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/router';
@@ -88,45 +90,53 @@ export default function NewSessionPage() {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">セッションを開始する</h1>
-
-      {/* ユーザーA(自分) */}
-      <label className="block mb-2">先に楽曲を選択するユーザー</label>
-      <select
-        value={userA}
-        onChange={(e) => setUserA(e.target.value)}
-        className="border p-2 w-full mb-4"
-      >
-        <option value="">-- 選択 --</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.spotify_user_id}>
-            {u.display_name || u.spotify_user_id || u.id}
-          </option>
-        ))}
-      </select>
-
-      {/* ユーザーB(相手) */}
-      <label className="block mb-2">後に楽曲を選択するユーザー</label>
-      <select
-        value={userB}
-        onChange={(e) => setUserB(e.target.value)}
-        className="border p-2 w-full mb-4"
-      >
-        <option value="">-- 選択 --</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.spotify_user_id}>
-            {u.display_name || u.spotify_user_id || u.id}
-          </option>
-        ))}
-      </select>
-
-      <button
-        onClick={handleCreateSession}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        phaseに移動する
-      </button>
+    <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-8">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
+        <h1 className="text-3xl font-bold mb-6 text-center">セッションを開始する</h1>
+  
+        {/* ユーザーA(自分) */}
+        <div className="mb-6">
+          <label className="block mb-2 text-lg">先に楽曲を選択するユーザー</label>
+          <select
+            value={userA}
+            onChange={(e) => setUserA(e.target.value)}
+            className="border border-gray-300 text-lg p-3 w-full rounded"
+          >
+            <option value="">-- 選択 --</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.spotify_user_id}>
+                {u.display_name || u.spotify_user_id || u.id}
+              </option>
+            ))}
+          </select>
+        </div>
+  
+        {/* ユーザーB(相手) */}
+        <div className="mb-6">
+          <label className="block mb-2 text-lg">後に楽曲を選択するユーザー</label>
+          <select
+            value={userB}
+            onChange={(e) => setUserB(e.target.value)}
+            className="border border-gray-300 text-lg p-3 w-full rounded"
+          >
+            <option value="">-- 選択 --</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.spotify_user_id}>
+                {u.display_name || u.spotify_user_id || u.id}
+              </option>
+            ))}
+          </select>
+        </div>
+  
+        <div className="flex justify-center">
+          <button
+            onClick={handleCreateSession}
+            className="text-xl px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            phaseに移動する
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
