@@ -750,7 +750,7 @@ export default function TrackClassificationPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {tracks.map((track) => {
+                  {unclassifiedTracks.map((track) => {
                     const updated = updatedTracks.get(track.spotify_track_id);
                     const canSinging = updated?.can_singing ?? track.can_singing;
                     const favLevel =
