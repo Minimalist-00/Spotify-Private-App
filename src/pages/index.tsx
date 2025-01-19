@@ -19,7 +19,7 @@ export default function Home() {
     <div className="relative flex flex-col min-h-screen text-gray-800">
       {/* ヘッダー */}
       <header className="flex items-center justify-between p-4 bg-green-600 text-white shadow-md">
-        <h1 className="text-xl font-bold">My Track History App</h1>
+        <h1 className="text-xl font-bold">Spotify Study App</h1>
         {session && (
           <div className="flex items-center space-x-4">
             {session.user?.image && (
@@ -39,7 +39,7 @@ export default function Home() {
               onClick={handleLogout}
               className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-sm"
             >
-              Logout
+              ログアウト
             </button>
           </div>
         )}
@@ -71,10 +71,10 @@ export default function Home() {
           // ===== ログイン後 =====
           <div className="w-full max-w-md mx-auto flex flex-col items-center">
             <h1 className="text-2xl md:text-3xl font-bold text-center mb-4 text-green-700">
-              曲の分類
+              楽曲の分類
             </h1>
             <p className="text-gray-700 text-center mb-8">
-              あなたの楽曲を<br />「お気に入り度」と「歌いやすさ」<br />で分類しましょう！
+              あなたの追加した楽曲を<br />「歌える自信」と「思い入れの強さ」<br />で分類しましょう！
             </p>
             {/* ライブラリへのリンク */}
             <Link href="/library" className="block w-full bg-white border border-green-300 hover:bg-green-100 text-green-800 text-lg font-semibold text-center rounded-lg shadow p-4 transition-colors">
@@ -86,7 +86,7 @@ export default function Home() {
 
       {/* フッター */}
       <footer className="p-4 bg-green-100 text-center text-sm text-gray-600">
-        © {new Date().getFullYear()} My Track History App. All rights reserved.
+        © {new Date().getFullYear()} Spotify Study App. All rights reserved.
       </footer>
     </div>
   );
