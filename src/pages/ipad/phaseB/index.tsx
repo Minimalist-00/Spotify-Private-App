@@ -52,6 +52,11 @@ export default function PhasesPage() {
   const [userBTracks, setUserBTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
 
+  // ▼ 追加: ログに保存する際に使うために、取得した楽曲を方向別に state で保持
+  //         今回は単純に「ユーザーA用」「ユーザーB用」で保持。実際に選ぶときにlogsに入れる。
+  const [recommendedTracksForA, setRecommendedTracksForA] = useState<TrackData[]>([]);
+  const [recommendedTracksForB, setRecommendedTracksForB] = useState<TrackData[]>([]);
+
   useEffect(() => {
     if (!session_id) return;
 
@@ -174,6 +179,10 @@ export default function PhasesPage() {
 
       setUserATracks(userATrackList);
       setUserBTracks(userBTrackList);
+
+      // ▼ 追加：ログに使うために、推奨された楽曲をstateに保持しておく
+      setRecommendedTracksForA(userATrackList);
+      setRecommendedTracksForB(userBTrackList);
     };
 
     fetchAll();
@@ -197,6 +206,30 @@ export default function PhasesPage() {
     }
     const userASpotifyId = userAData.spotify_user_id;
 
+    // ▼ 追加実装：logsテーブルへインサート
+    try {
+      const { error: logError } = await supabase
+        .from('logs')
+        .insert([
+          {
+            session_id: session_id,             // どのセッションか
+            phase_id: phase_id,                 // どのフェーズか
+            user_id: userASpotifyId,            // 誰が曲を選択しているか
+            recommended_tracks: recommendedTracksForA, // 推奨された楽曲3件をそのままJSONに
+            selected_track: selectedTrack       // 選択したトラックID
+          }
+        ]);
+
+      if (logError) {
+        throw logError;
+      }
+    } catch (err) {
+      console.error('Failed to insert logs:', err);
+      alert('ログの記録に失敗しました');
+      return;
+    }
+
+    // ▼ ここから既存のフェーズ更新処理
     const { error } = await supabase
       .from('phases')
       .update({
@@ -236,6 +269,30 @@ export default function PhasesPage() {
     }
     const userBSpotifyId = userBData.spotify_user_id;
 
+    // ▼ 追加実装：logsテーブルへインサート
+    try {
+      const { error: logError } = await supabase
+        .from('logs')
+        .insert([
+          {
+            session_id: session_id,
+            phase_id: phase_id,
+            user_id: userBSpotifyId,
+            recommended_tracks: recommendedTracksForB,
+            selected_track: selectedTrack
+          }
+        ]);
+
+      if (logError) {
+        throw logError;
+      }
+    } catch (err) {
+      console.error('Failed to insert logs:', err);
+      alert('ログの記録に失敗しました');
+      return;
+    }
+
+    // ▼ ここから既存のフェーズ更新処理
     const { error } = await supabase
       .from('phases')
       .update({
@@ -282,7 +339,7 @@ export default function PhasesPage() {
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
-    
+
           {userATracks.length === 0 ? (
             <p className="text-center text-xl">楽曲がありません。</p>
           ) : (
@@ -319,7 +376,7 @@ export default function PhasesPage() {
             </div>
           )}
         </div>
-    
+
         <div className="mt-4">
           <button
             onClick={handleSelectUserATracks}
@@ -345,7 +402,7 @@ export default function PhasesPage() {
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
-    
+
           {userBTracks.length === 0 ? (
             <p className="text-center text-xl">楽曲がありません。</p>
           ) : (
@@ -382,7 +439,7 @@ export default function PhasesPage() {
             </div>
           )}
         </div>
-    
+
         <div className="mt-4">
           <button
             onClick={handleSelectUserBTracks}
