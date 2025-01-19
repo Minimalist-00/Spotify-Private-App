@@ -1,11 +1,10 @@
 // src/pages/ipad/phaseA/index.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/utils/supabaseClient';
-import Link from 'next/link';
-import Image from 'next/image';
 import PageTimer from '@/components/pageTimer';
+import { supabase } from '@/utils/supabaseClient';
+import Image from 'next/image';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 type TrackData = {
   spotify_track_id: string;
@@ -196,10 +195,8 @@ export default function PhasesPage() {
     return (
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
-          <h1 className="text-3xl font-bold mb-6">ご協力ありがとうございました</h1>
-          <Link href="/" className="text-xl text-blue-600 underline">
-            トップに戻る
-          </Link>
+          <h1 className="text-3xl font-bold mb-4">実験はここまでです！</h1>
+          <h1 className="text-2xl font-bold mb-2">部屋を出て中川まで声をかけてください</h1>
         </div>
       </div>
     );
@@ -236,11 +233,10 @@ export default function PhasesPage() {
               {filteredUserATracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
-                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
-                    selectedTrack === track.spotify_track_id
-                      ? 'border-green-500'
-                      : 'border-gray-300'
-                  }`}
+                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${selectedTrack === track.spotify_track_id
+                    ? 'border-green-500'
+                    : 'border-gray-300'
+                    }`}
                   onClick={() => setSelectedTrack(track.spotify_track_id)}
                 >
                   {track.image_url && (
@@ -312,11 +308,10 @@ export default function PhasesPage() {
               {filteredUserBTracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
-                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
-                    selectedTrack === track.spotify_track_id
-                      ? 'border-green-500'
-                      : 'border-gray-300'
-                  }`}
+                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${selectedTrack === track.spotify_track_id
+                    ? 'border-green-500'
+                    : 'border-gray-300'
+                    }`}
                   onClick={() => setSelectedTrack(track.spotify_track_id)}
                 >
                   {track.image_url && (

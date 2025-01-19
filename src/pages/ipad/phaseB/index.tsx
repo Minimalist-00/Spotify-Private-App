@@ -1,11 +1,10 @@
 // src/pages/ipad/phaseB/index.tsx
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/utils/supabaseClient';
-import Link from 'next/link';
-import Image from 'next/image';
 import PageTimer from '@/components/pageTimer';
+import { supabase } from '@/utils/supabaseClient';
+import Image from 'next/image';
+import { useRouter } from 'next/router';
+import { useCallback, useEffect, useState } from 'react';
 
 type TrackData = {
   spotify_track_id: string;
@@ -318,10 +317,8 @@ export default function PhasesPage() {
     return (
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
-          <h1 className="text-3xl font-bold mb-6">ご協力ありがとうございました</h1>
-          <Link href="/" className="text-xl text-blue-600 underline">
-            トップに戻る
-          </Link>
+          <h1 className="text-3xl font-bold mb-4">実験はここまでです！</h1>
+          <h1 className="text-2xl font-bold mb-2">部屋を出て中川まで声をかけてください</h1>
         </div>
       </div>
     );
