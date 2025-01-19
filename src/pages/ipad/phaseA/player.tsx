@@ -6,6 +6,10 @@ import { supabase } from '@/utils/supabaseClient';
 import { signIn, useSession } from 'next-auth/react';
 import Image from 'next/image';
 
+// ここでタイマーHookをインポート
+import usePageTimer from '@/hooks/usePageTimer';
+import PageTimer from '@/components/pageTimer';
+
 /* ================ 1) Spotifyの型定義 ================ */
 interface SpotifyPlayer {
   connect: () => Promise<boolean>;
@@ -94,6 +98,15 @@ export default function PlayerPage() {
   const [trackName, setTrackName] = useState<string>('');
   const [trackArtists, setTrackArtists] = useState<string>('');
   const [albumImage, setAlbumImage] = useState<string>('');
+
+  // 30秒経過後にボタンを表示するためのフラグ
+  const [showDialogueButton, setShowDialogueButton] = useState<boolean>(false);
+
+  // ページ滞在時間（秒）
+  const elapsedTime = usePageTimer();
+
+  // 初回の再生かどうかを判定するフラグ
+  const [hasStarted, setHasStarted] = useState(false);
 
   // 1) 認証チェック（未認証なら signIn）
   useEffect(() => {
@@ -282,9 +295,10 @@ export default function PlayerPage() {
   }, [router, player]);
 
   /* ========== 再生・停止・シークなどの操作関数 ========== */
-  const handlePlay = async () => {
-    if (!session?.accessToken || !deviceId || !selectedTrackId) return;
 
+  // 初回再生 (楽曲のURIを指定して再生開始)
+  const handlePlayFromStart = async () => {
+    if (!session?.accessToken || !deviceId || !selectedTrackId) return;
     try {
       await fetch(
         `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
@@ -301,6 +315,34 @@ export default function PlayerPage() {
       );
     } catch (error) {
       console.error('Error playing track:', error);
+    }
+  };
+
+  // 再生 / 一時停止をトグルで行う
+  const handleTogglePlay = async () => {
+    if (!player) return;
+
+    if (isPaused) {
+      // 現在パーズ(停止)中 → 再生したい
+      if (!hasStarted) {
+        // まだ一度も再生してない → はじめて再生
+        await handlePlayFromStart();
+        setHasStarted(true);
+      } else {
+        // すでに再生したことがある → 一時停止位置から再開
+        try {
+          await player.resume();
+        } catch (error) {
+          console.error('Error resuming track:', error);
+        }
+      }
+    } else {
+      // 現在再生中 → 一時停止
+      try {
+        await player.pause();
+      } catch (error) {
+        console.error('Error pausing track:', error);
+      }
     }
   };
 
@@ -327,6 +369,13 @@ export default function PlayerPage() {
     });
   };
 
+  // ページに滞在して30秒以上経過したらボタンを表示
+  useEffect(() => {
+    if (elapsedTime >= 30 && !showDialogueButton) {
+      setShowDialogueButton(true);
+    }
+  }, [elapsedTime, showDialogueButton]);
+
   /* ========== ユーティリティ: 時間表示 ========== */
   const formatTime = (ms: number) => {
     const totalSec = Math.floor(ms / 1000);
@@ -343,42 +392,48 @@ export default function PlayerPage() {
   }
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-4">曲の再生ページ</h1>
-      <p className="text-xl mb-4">
-        状態: {isPaused ? '停止中' : '再生中'}
-      </p>
-  
-      <div className="mb-4">
-        <button
-          onClick={handlePlay}
-          className="px-6 py-3 bg-green-600 text-white text-lg rounded hover:bg-green-700"
-        >
-          再生
-        </button>
+    <div className="relative w-screen h-screen bg-gray-100 p-4 flex flex-col items-center justify-center">
+      {/* 右上にスキップボタン */}
+      <button
+        onClick={handleGotoDialogue}
+        className="absolute top-4 right-4 text-white bg-gray-600 rounded-full px-4 py-2 hover:bg-gray-700"
+      >
+        &raquo;&raquo;
+      </button>
+
+      <div className="absolute top-4 left-4 px-4 py-2">
+        <PageTimer />
       </div>
-  
-      {/* 楽曲情報の表示 */}
-      {trackName && (
-        <div className="flex items-center mb-4">
-          {albumImage && (
-            <Image
-              src={albumImage}
-              alt="Album Cover"
-              width={120}
-              height={120}
-              className="mr-4 rounded"
-            />
-          )}
-          <div>
-            <p className="text-2xl font-bold">{trackName}</p>
-            <p className="text-lg text-gray-600">{trackArtists}</p>
-          </div>
-        </div>
-      )}
-  
-      {/* 再生位置とスライダー */}
-      <div className="w-full mb-4">
+
+      <h1 className="text-2xl font-bold mb-6">楽曲の再生</h1>
+
+      {/* アルバムイメージ */}
+      <div className="w-64 h-64 bg-gray-300 relative mb-4 flex items-center justify-center">
+        {albumImage && (
+          <Image
+            src={albumImage}
+            alt="Album Cover"
+            fill
+            className="object-cover"
+          />
+        )}
+      </div>
+
+      <div className="text-center mb-4">
+        <p className="text-xl font-semibold">{trackName}</p>
+        <p className="text-md text-gray-600">{trackArtists}</p>
+      </div>
+
+      {/* 再生 / 停止ボタン */}
+      <button
+        onClick={handleTogglePlay}
+        className="w-16 h-16 rounded-full flex items-center justify-center bg-green-600 text-white text-2xl mb-8 hover:bg-green-700"
+      >
+        {isPaused ? '▶' : '❚❚'}
+      </button>
+
+      {/* シークバー */}
+      <div className="w-[80%] max-w-md mb-2">
         <input
           type="range"
           min={0}
@@ -387,20 +442,21 @@ export default function PlayerPage() {
           onChange={handleSeek}
           className="w-full"
         />
-        <div className="flex justify-between text-lg mt-1">
-          <span>{formatTime(position)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
       </div>
-  
-      <div className="mt-auto">
+      <div className="w-[80%] max-w-md flex justify-between text-sm text-gray-700 mb-6">
+        <span>{formatTime(position)}</span>
+        <span>{formatTime(duration)}</span>
+      </div>
+
+      {/* 30秒以上滞在で表示するボタン */}
+      {showDialogueButton && (
         <button
           onClick={handleGotoDialogue}
-          className="w-full py-4 bg-blue-600 text-white text-2xl rounded hover:bg-blue-700"
+          className="w-64 py-3 bg-blue-600 text-white text-lg rounded hover:bg-blue-700"
         >
           対話セクションに移動する
         </button>
-      </div>
+      )}
     </div>
   );
 }
