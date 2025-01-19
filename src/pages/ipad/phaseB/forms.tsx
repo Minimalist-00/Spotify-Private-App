@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/router';
+import PageTimer from '@/components/pageTimer';
 
 export default function FormsPage() {
   const router = useRouter();
@@ -26,6 +27,8 @@ export default function FormsPage() {
         <h1 className="text-3xl font-bold mb-6">
           google formsで評価を入力してください。
         </h1>
+
+        <PageTimer />
   
         {/* ここにGoogle Formsの埋め込みや説明などを入れる */}
         {/* 例： <iframe src="..." ... /> */}
