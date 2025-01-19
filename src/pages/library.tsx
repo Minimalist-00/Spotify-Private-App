@@ -1,28 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import Head from 'next/head'; // ダークモード拒否用のメタタグ挿入に使用
-import { useSession } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
+import { useSession } from 'next-auth/react';
+import Head from 'next/head'; // ダークモード拒否用のメタタグ挿入に使用
 import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
 
 // MUI
 import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Container,
-  Box,
-  Button,
-  FormControlLabel,
-  FormLabel,
-  RadioGroup,
-  Radio,
   // Checkbox,
   Alert,
-  Tabs,
-  Tab,
-  Snackbar,
-  TextField,
+  AppBar,
+  Box,
+  Button,
+  Container,
+  FormControlLabel,
+  FormLabel,
   Paper,
+  Radio,
+  RadioGroup,
+  Snackbar,
+  Tab,
+  Tabs,
+  TextField,
+  Toolbar,
+  Typography,
 } from '@mui/material';
 
 // import CloseIcon from '@mui/icons-material/Close';
@@ -352,7 +352,7 @@ export default function TrackClassificationPage() {
             </Box> */}
             {/* 歌いやすさ (1~4) */}
             <Box display="flex" flexDirection="row" alignItems="center">
-              <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 3 }}>歌える自信</FormLabel>
+              <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 1 }}>歌える自信</FormLabel>
               <RadioGroup
                 row
                 value={
@@ -380,7 +380,7 @@ export default function TrackClassificationPage() {
 
             {/* 思い入れ (1~4) */}
             <Box display="flex" flexDirection="row" alignItems="center">
-              <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 5 }}>
+              <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 3 }}>
                 思い入れ
               </FormLabel>
               <RadioGroup
@@ -625,7 +625,7 @@ export default function TrackClassificationPage() {
         >
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              曲の分類
+              楽曲の分類
             </Typography>
           </Toolbar>
         </AppBar>
@@ -639,10 +639,14 @@ export default function TrackClassificationPage() {
               backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
             }}
           >
-            このページでは、「歌いやすさ(0~4)」と「思い入れ(1~4)」を入力します。<br />
-            0 は「歌えない」(チェックボックス)、1～4 は「歌える度合い」(ラジオボタン)、<br />
-            思い入れは 1～4 段階 です。<br />
-            分類完了した曲でもタップ/クリックで再分類できます。
+            このページでは、「歌える自信(1~4)」と「思い入れの強さ(1~4)」を入力します。<br />
+            歌える自信は「その曲を自分がどのくらい歌いこなせるか」です。<br />
+            1: ほとんど自信がない ～ 4: とても自信がある<br />
+            <br />
+            思い入れの強さは「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
+            1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
+            <br />
+            分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
           </Alert>
 
           {/* --- モバイル向けタブレイアウト --- */}
