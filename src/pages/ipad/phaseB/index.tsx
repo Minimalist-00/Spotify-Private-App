@@ -71,6 +71,29 @@ export default function PhasesPage() {
   }, [session_id]);
 
   /**
+   * 指定ユーザーがこれまでに選択したトラック ID リストを取得する
+   */
+  const fetchAlreadySelectedTrackIds = useCallback(async (userId: string) => {
+    // phasesテーブルの select_tracks_user_id が該当ユーザーになっている行の select_tracks を収集
+    const { data, error } = await supabase
+      .from('phases')
+      .select('select_tracks')
+      .eq('select_tracks_user_id', userId);
+
+    if (error) {
+      console.error('Error fetching already selected tracks:', error);
+      return [];
+    }
+    if (!data) {
+      return [];
+    }
+
+    // select_tracks カラムには1つのトラックID(string)が入っている想定なので単純に配列化
+    const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
+    return selectedIds;
+  }, []);
+
+  /**
    * Supabase から楽曲を取得し、条件に合った3件をランダムで返す
    */
   const fetchRecommendedTracks = useCallback(
@@ -81,14 +104,25 @@ export default function PhasesPage() {
         return [];
       }
 
+      // (A) このユーザーが過去に選択したトラックIDを全て取得
+      const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds(userId);
+
       // --- (1) 優先度の高い self_disclosure_level の曲を取得 (0 は除外) ---
-      const { data: preferredData, error: preferredError } = await supabase
+      let query = supabase
         .from('tracks')
         .select('*')
         .eq('user_id', userId)
         .neq('self_disclosure_level', 0)
         .in('self_disclosure_level', preferred);
 
+      // 過去選択したものを除外
+      if (alreadySelectedTrackIds.length > 0) {
+        // PostgreSQL のクエリ的に "('id1','id2')" という文字列を作る
+        const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
+        query = query.not('spotify_track_id', 'in', excludeList);
+      }
+
+      const { data: preferredData, error: preferredError } = await query;
       if (preferredError) {
         console.error('Error fetching preferred tracks:', preferredError);
         return [];
@@ -98,13 +132,20 @@ export default function PhasesPage() {
 
       // --- (2) 3件に満たない場合はフォールバックの曲を追加 ---
       if (combined.length < 3 && fallback.length > 0) {
-        const { data: fallbackData, error: fallbackError } = await supabase
+        let fallbackQuery = supabase
           .from('tracks')
           .select('*')
           .eq('user_id', userId)
           .neq('self_disclosure_level', 0)
           .in('self_disclosure_level', fallback);
 
+        // 過去選択したものを除外
+        if (alreadySelectedTrackIds.length > 0) {
+          const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
+          fallbackQuery = fallbackQuery.not('spotify_track_id', 'in', excludeList);
+        }
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
         if (fallbackError) {
           console.error('Error fetching fallback tracks:', fallbackError);
         } else if (fallbackData) {
@@ -116,7 +157,7 @@ export default function PhasesPage() {
       const shuffled = combined.sort(() => 0.5 - Math.random()).slice(0, 3);
       return shuffled;
     },
-    []
+    [fetchAlreadySelectedTrackIds]
   );
 
   useEffect(() => {

@@ -100,18 +100,6 @@ export default function PlayerPage() {
     }
   }, [status]);
 
-  useEffect(() => {
-    // SSR 環境では window が無いのでガード
-    if (typeof window !== 'undefined') {
-      // 既に何らかの理由で定義されていないなら定義
-      if (!window.onSpotifyWebPlaybackSDKReady) {
-        window.onSpotifyWebPlaybackSDKReady = () => {
-          console.log('Spotify Web Playback SDK is ready (no-op).');
-        };
-      }
-    }
-  }, []);
-
   // 2) phasesテーブルから `select_tracks` を取得
   useEffect(() => {
     if (!phase_id) return;
@@ -131,7 +119,7 @@ export default function PlayerPage() {
     fetchPhase();
   }, [phase_id]);
 
-  // 3) 選択されたトラックIDが決まったら、Spotify Web API から情報を取得して表示用の State 更新
+  // 3) 選択されたトラックIDが決まったら、Spotify Web API から情報を取得
   useEffect(() => {
     if (!selectedTrackId || !session?.accessToken) return;
 
@@ -160,11 +148,14 @@ export default function PlayerPage() {
     fetchTrackInfo();
   }, [selectedTrackId, session?.accessToken]);
 
-  // 4) SpotifyのWeb Playback SDKを読み込み (なければ script タグを生成)
+  // 4) Spotify Web Playback SDKスクリプトを読み込み
   useEffect(() => {
-    if (!document.getElementById('spotify-player')) {
+    if (typeof window === 'undefined') return; // SSRガード
+
+    const scriptId = 'spotify-player-script';
+    if (!document.getElementById(scriptId)) {
       const scriptTag = document.createElement('script');
-      scriptTag.id = 'spotify-player';
+      scriptTag.id = scriptId;
       scriptTag.src = 'https://sdk.scdn.co/spotify-player.js';
       scriptTag.async = true;
       document.body.appendChild(scriptTag);
@@ -172,74 +163,87 @@ export default function PlayerPage() {
   }, []);
 
   /**
-   * 5) アクセストークンが変化 (初回 or 更新) したら、プレイヤーを新規に作成・接続
-   *    注意: 依存配列には session?.accessToken だけを入れ、
-   *          ここで setPlayer() しても再度 effect は走らないようにする
+   * 5) プレイヤー生成
    */
   useEffect(() => {
-    // 未認証またはトークンがない場合は何もしない
     if (!session?.accessToken) return;
+    if (typeof window === 'undefined') return;
+    if (player) return; // すでにプレイヤーがあれば作り直さない
 
-    // Spotify SDK がまだ読み込まれていない場合
-    if (!window.Spotify) return;
+    const initializePlayer = () => {
+      if (!window.Spotify) return;
+      console.log('Initializing Spotify Player...');
 
-    // プレイヤーを作成
-    const newPlayer = new window.Spotify.Player({
-      name: 'My Web Player',
-      getOAuthToken: (cb) => {
-        cb(session.accessToken as string);
-      },
-      volume: 0.5,
-    });
+      const newPlayer = new window.Spotify.Player({
+        name: 'My Web Player',
+        getOAuthToken: (cb) => {
+          cb(session.accessToken as string);
+        },
+        volume: 0.5,
+      });
 
-    // イベントリスナー登録
-    newPlayer.addListener('ready', (arg) => {
-      if (!arg) return;
-      const event = arg as PlayerReadyEvent;
-      console.log('Ready with Device ID', event.device_id);
-      setDeviceId(event.device_id);
-    });
+      newPlayer.addListener('ready', (arg) => {
+        if (!arg) return;
+        const event = arg as PlayerReadyEvent;
+        console.log('Ready with Device ID', event.device_id);
+        setDeviceId(event.device_id);
+      });
 
-    newPlayer.addListener('not_ready', (arg) => {
-      if (!arg) return;
-      const event = arg as PlayerNotReadyEvent;
-      console.log('Device ID has gone offline', event.device_id);
-    });
+      newPlayer.addListener('not_ready', (arg) => {
+        if (!arg) return;
+        const event = arg as PlayerNotReadyEvent;
+        console.log('Device ID has gone offline', event.device_id);
+      });
 
-    newPlayer.addListener('player_state_changed', (state) => {
-      if (!state) return;
-      const ps = state as PlaybackState;
-      setIsPaused(ps.paused);
-      setPosition(ps.position);
-      setDuration(ps.duration);
+      newPlayer.addListener('player_state_changed', (state) => {
+        if (!state) return;
+        const ps = state as PlaybackState;
+        setIsPaused(ps.paused);
+        setPosition(ps.position);
+        setDuration(ps.duration);
 
-      // 曲が切り替わった場合にトラック情報を更新
-      const currentTrack = ps.track_window.current_track;
-      setTrackName(currentTrack.name);
-      setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
-      setAlbumImage(currentTrack.album.images?.[0]?.url || '');
-    });
+        const currentTrack = ps.track_window.current_track;
+        setTrackName(currentTrack.name);
+        setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
+        setAlbumImage(currentTrack.album.images?.[0]?.url || '');
+      });
 
-    // 接続開始
-    newPlayer.connect();
-    // 生成したプレイヤーを state に保存
-    setPlayer(newPlayer);
-
-    // アンマウント or 再生成前に disconnect
-    return () => {
-      newPlayer.disconnect();
+      newPlayer.connect();
+      setPlayer(newPlayer);
     };
-  }, [session?.accessToken]);
+
+    if (!window.onSpotifyWebPlaybackSDKReady) {
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        console.log('SDK loaded → onSpotifyWebPlaybackSDKReady called.');
+        initializePlayer();
+      };
+    }
+
+    if (window.Spotify) {
+      initializePlayer();
+    }
+  }, [session?.accessToken, player]);
 
   /**
-   * 6) 1秒おきにプレイヤーの状態を取りに行き、
-   *    再生中であれば position/duration を更新 (シークバー表示用)
+   * 6) プレイヤーのクリーンアップ
+   */
+  useEffect(() => {
+    // 「player が変化したとき」「アンマウント時」に前の player をdisconnect
+    return () => {
+      if (player) {
+        console.log('Disconnecting old player...');
+        player.disconnect();
+      }
+    };
+  }, [player]);
+
+  /**
+   * 7) ポーリングで再生状態を更新 (1秒おき)
    */
   useEffect(() => {
     if (!player) return;
 
     const interval = setInterval(async () => {
-      // 再生中のみポーリングして現在位置を更新
       if (!isPaused) {
         try {
           const state = await player.getCurrentState?.();
@@ -253,38 +257,48 @@ export default function PlayerPage() {
       }
     }, 1000);
 
-    // クリーンアップ
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [player, isPaused]);
+
+  /**
+   * 8) 画面遷移時に曲を一時停止する
+   *    → routeChangeStart イベントをフックして player.pause() を呼ぶ
+   */
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (player) {
+        console.log('Route change detected. Pausing track...');
+        player.pause().catch((err) => console.error('Error pausing on route change:', err));
+      }
+    };
+
+    router.events.on('routeChangeStart', handleRouteChange);
+
+    return () => {
+      router.events.off('routeChangeStart', handleRouteChange);
+    };
+  }, [router, player]);
 
   /* ========== 再生・停止・シークなどの操作関数 ========== */
   const handlePlay = async () => {
     if (!session?.accessToken || !deviceId || !selectedTrackId) return;
 
     try {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-        body: JSON.stringify({
-          uris: [`spotify:track:${selectedTrackId}`],
-        }),
-      });
+      await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify({
+            uris: [`spotify:track:${selectedTrackId}`],
+          }),
+        }
+      );
     } catch (error) {
       console.error('Error playing track:', error);
-    }
-  };
-
-  const handlePause = async () => {
-    if (!player) return;
-    try {
-      await player.pause();
-    } catch (error) {
-      console.error('Error pausing track:', error);
     }
   };
 
@@ -337,12 +351,6 @@ export default function PlayerPage() {
           className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
         >
           再生
-        </button>
-        <button
-          onClick={handlePause}
-          className="mt-2 ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          一時停止
         </button>
       </div>
 
