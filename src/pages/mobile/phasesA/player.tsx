@@ -304,7 +304,7 @@ export default function PlayerPage() {
   // ページ遷移
   const handleGotoDialogue = () => {
     router.push({
-      pathname: '/phasesA/dialog',
+      pathname: '/ipad/phasesA/dialog',
       query: {
         session_id,
         phase_id,
