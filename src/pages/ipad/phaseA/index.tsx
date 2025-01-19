@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import Image from 'next/image';
+import PageTimer from '@/components/pageTimer';
 
 type TrackData = {
   spotify_track_id: string;
@@ -212,6 +213,7 @@ export default function PhasesPage() {
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
+          <PageTimer />
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
@@ -287,6 +289,7 @@ export default function PhasesPage() {
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
+          <PageTimer />
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>

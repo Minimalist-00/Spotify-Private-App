@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
+import PageTimer from '@/components/pageTimer';
 
 export default function DialogPage() {
   const router = useRouter();
@@ -97,6 +98,7 @@ export default function DialogPage() {
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
           <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <PageTimer />
           <div className="mt-6">
             <button
               onClick={handleNext}
@@ -115,6 +117,7 @@ export default function DialogPage() {
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-6">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl w-full text-center">
           <h1 className="text-3xl font-bold mb-6">対話をしてください。</h1>
+          <PageTimer />
           <div className="mt-6">
             <button
               onClick={handleNext}
