@@ -19,7 +19,7 @@ type TrackData = {
 
 export default function PhasesPage() {
   const router = useRouter();
-  const { session_id, phase_id, phase_numbers , directions} = router.query;
+  const { session_id, phase_id, phase_numbers, directions } = router.query;
 
   const phaseNumbersNum = phase_numbers ? Number(phase_numbers) : 0;
   const directionNum = directions ? Number(directions) : 0;
@@ -29,6 +29,10 @@ export default function PhasesPage() {
   const [userATracks, setUserATracks] = useState<TrackData[]>([]);
   const [userBTracks, setUserBTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
+
+  // 追加: 楽曲名の検索キーワード
+  const [searchTermA, setSearchTermA] = useState('');
+  const [searchTermB, setSearchTermB] = useState('');
 
   useEffect(() => {
     if (!session_id) return;
@@ -61,6 +65,7 @@ export default function PhasesPage() {
         .select('*')
         .neq('self_disclosure_level', 0)
         .eq('user_id', userA);
+
       if (error) {
         console.error('Error fetching tracks:', error);
         return;
@@ -76,6 +81,7 @@ export default function PhasesPage() {
         .select('*')
         .neq('self_disclosure_level', 0)
         .eq('user_id', userB);
+
       if (error) {
         console.error('Error fetching tracks:', error);
         return;
@@ -88,6 +94,16 @@ export default function PhasesPage() {
     fetchUserATracks();
     fetchUserBTracks();
   }, [userA, userB]);
+
+  // ユーザーA用の楽曲リストをフィルタリング (検索)
+  const filteredUserATracks = userATracks.filter(track =>
+    track.name.toLowerCase().includes(searchTermA.toLowerCase())
+  );
+
+  // ユーザーB用の楽曲リストをフィルタリング (検索)
+  const filteredUserBTracks = userBTracks.filter(track =>
+    track.name.toLowerCase().includes(searchTermB.toLowerCase())
+  );
 
   const handleSelectUserATracks = async () => {
     if (!phase_id || !selectedTrack) {
@@ -145,7 +161,7 @@ export default function PhasesPage() {
       .single();
 
     if (userBError || !userBData) {
-      alert('userAのspotify_user_id 取得失敗');
+      alert('userBのspotify_user_id 取得失敗');
       return;
     }
     const userBSpotifyId = userBData.spotify_user_id;
@@ -188,6 +204,7 @@ export default function PhasesPage() {
     );
   }
 
+  // directionNum === 1 (ユーザーAが曲を選ぶ) の画面
   if (directionNum === 1) {
     return (
       <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
@@ -198,12 +215,23 @@ export default function PhasesPage() {
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
-    
-          {userATracks.length === 0 ? (
-            <p className="text-center text-xl">楽曲がありません。</p>
+
+          {/* 追加: 検索入力欄 */}
+          <div className="mb-4 flex justify-center">
+            <input
+              className="border border-gray-300 rounded-md p-2 w-64"
+              type="text"
+              value={searchTermA}
+              onChange={(e) => setSearchTermA(e.target.value)}
+              placeholder="楽曲名で検索"
+            />
+          </div>
+
+          {filteredUserATracks.length === 0 ? (
+            <p className="text-center text-xl">該当する楽曲がありません。</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {userATracks.map((track) => (
+              {filteredUserATracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
                   className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
@@ -237,7 +265,7 @@ export default function PhasesPage() {
             </div>
           )}
         </div>
-    
+
         <div className="mt-4">
           <button
             onClick={handleSelectUserATracks}
@@ -251,6 +279,7 @@ export default function PhasesPage() {
     );
   }
 
+  // directionNum === 2 (ユーザーBが曲を選ぶ) の画面
   if (directionNum === 2) {
     return (
       <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
@@ -261,12 +290,23 @@ export default function PhasesPage() {
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
-    
-          {userBTracks.length === 0 ? (
-            <p className="text-center text-xl">楽曲がありません。</p>
+
+          {/* 追加: 検索入力欄 */}
+          <div className="mb-4 flex justify-center">
+            <input
+              className="border border-gray-300 rounded-md p-2 w-64"
+              type="text"
+              value={searchTermB}
+              onChange={(e) => setSearchTermB(e.target.value)}
+              placeholder="楽曲名で検索"
+            />
+          </div>
+
+          {filteredUserBTracks.length === 0 ? (
+            <p className="text-center text-xl">該当する楽曲がありません。</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {userBTracks.map((track) => (
+              {filteredUserBTracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
                   className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${
@@ -300,7 +340,7 @@ export default function PhasesPage() {
             </div>
           )}
         </div>
-    
+
         <div className="mt-4">
           <button
             onClick={handleSelectUserBTracks}
