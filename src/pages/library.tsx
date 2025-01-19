@@ -1,44 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import Head from 'next/head'; // ダークモード拒否用のメタタグ挿入に使用
-import { useSession } from 'next-auth/react';
 import { supabase } from '@/utils/supabaseClient';
+import { useSession } from 'next-auth/react';
+import Head from 'next/head'; // ダークモード拒否用のメタタグ挿入に使用
 import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
 
 // MUI
 import {
+  Alert,
   AppBar,
-  Toolbar,
-  Typography,
-  Container,
   Box,
   Button,
+  Card,
+  CardContent,
+  CardMedia,
+  Checkbox,
+  Container,
   FormControl,
   FormControlLabel,
   FormLabel,
-  RadioGroup,
+  Paper,
   Radio,
-  Checkbox,
-  Alert,
-  Tabs,
+  RadioGroup,
+  Snackbar,
   Tab,
-  TableContainer,
   Table,
-  TableHead,
-  TableRow,
   TableBody,
   TableCell,
-  Paper,
-  Card,
-  CardMedia,
-  CardContent,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Toolbar,
+  Typography,
   useMediaQuery,
   useTheme,
-  Snackbar,
-  TextField,
 } from '@mui/material';
 
-import CloseIcon from '@mui/icons-material/Close';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CloseIcon from '@mui/icons-material/Close';
 
 type TrackData = {
   spotify_track_id: string;
@@ -306,7 +306,7 @@ export default function TrackClassificationPage() {
         >
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              曲の分類
+              楽曲の分類
             </Typography>
           </Toolbar>
         </AppBar>
@@ -320,10 +320,14 @@ export default function TrackClassificationPage() {
               backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
             }}
           >
-            このページでは、「歌いやすさ(0~4)」と「思い入れ(1~4)」を入力します。<br />
-            0 は「歌えない」(チェックボックス)、1～4 は「歌える度合い」(ラジオボタン)、<br />
-            思い入れは 1～4 段階 です。<br />
-            分類完了した曲でもタップ/クリックで再分類ができます。
+            このページでは、「歌える自信(1~4)」と「思い入れの強さ(1~4)」を入力します。<br />
+            歌える自信は「その曲を自分がどのくらい歌いこなせるか」です。<br />
+            1: ほとんど自信がない ～ 4: とても自信がある<br />
+            <br />
+            思い入れの強さは「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
+            1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
+            <br />
+            分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
           </Alert>
 
           {/* モバイル向けタブレイアウト */}
@@ -354,15 +358,15 @@ export default function TrackClassificationPage() {
                   // 未分類が空の場合
                   <Paper sx={{ p: 2, mb: 2 }}>
                     <Typography variant="subtitle1" color="text.secondary">
-                      曲は全て分類されました！
+                      曲の分類がすべて完了しました！
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                       分類評価に間違いがある場合には
                       <br />
-                      分類完了曲のタブから再度評価してください。
+                      分類完了曲のタブから再度お願いします。
                       <br />
                       <br />
-                      ご協力ありがとうございましたm(_ _)m
+                      ご協力ありがとうございました！！
                     </Typography>
                   </Paper>
                 ) : (
