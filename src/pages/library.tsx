@@ -438,7 +438,7 @@ export default function TrackClassificationPage() {
                             flexDirection="row"
                             alignItems="center"
                           >
-                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 3 }}>
+                            <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 1 }}>
                               歌える自信
                             </FormLabel>
                             {/* 歌えない */}
