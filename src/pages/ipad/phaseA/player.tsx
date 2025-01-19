@@ -1,4 +1,4 @@
-// pages/phasesA/player.tsx
+// src/pages/ipad/phaseA/player.tsx
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -25,7 +25,6 @@ interface SpotifyPlayer {
 interface PlayerReadyEvent {
   device_id: string;
 }
-
 interface PlayerNotReadyEvent {
   device_id: string;
 }
@@ -45,11 +44,6 @@ interface PlaybackState {
   };
 }
 
-/*
-  Spotify Web API から返るトラック情報用の型
-  artists: Array<SpotifyArtist>
-  album: { images: ... }
-*/
 interface SpotifyArtist {
   name: string;
 }
@@ -89,7 +83,7 @@ export default function PlayerPage() {
   // Supabaseから取得するトラックID
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 
-  // SpotifyPlayerインターフェース
+  // SpotifyPlayerインスタンス
   const [player, setPlayer] = useState<SpotifyPlayer | null>(null);
   const [deviceId, setDeviceId] = useState<string>('');
 
@@ -101,23 +95,20 @@ export default function PlayerPage() {
   const [trackArtists, setTrackArtists] = useState<string>('');
   const [albumImage, setAlbumImage] = useState<string>('');
 
-  // 認証チェック
+  // 1) 認証チェック（未認証なら signIn）
   useEffect(() => {
     if (status === 'unauthenticated') {
       signIn('spotify');
     }
   }, [status]);
 
-  /**
-   * (A) phasesテーブルから select_tracks を取得して
-   *     selectedTrackId に格納
-   */
+  // 2) phasesテーブルから `select_tracks` を取得
   useEffect(() => {
     if (!phase_id) return;
     const fetchPhase = async () => {
       const { data, error } = await supabase
         .from('phases')
-        .select('select_tracks, select_tracks_user_id')
+        .select('select_tracks')
         .eq('id', phase_id)
         .single();
 
@@ -130,10 +121,7 @@ export default function PlayerPage() {
     fetchPhase();
   }, [phase_id]);
 
-  /**
-   * (B) selectedTrackId が設定されたら、
-   *     Spotify Web API からトラック情報を取得して表示用の情報をセット
-   */
+  // 3) 選択されたトラックIDが決まったら、Spotify Web API から情報を取得
   useEffect(() => {
     if (!selectedTrackId || !session?.accessToken) return;
 
@@ -162,12 +150,14 @@ export default function PlayerPage() {
     fetchTrackInfo();
   }, [selectedTrackId, session?.accessToken]);
 
-  // (C) SpotifyのWeb Playback SDKを一度だけ読み込み
+  // 4) Spotify Web Playback SDKスクリプトを読み込み
   useEffect(() => {
-    const existingScriptTag = document.getElementById('spotify-player');
-    if (!existingScriptTag) {
+    if (typeof window === 'undefined') return; // SSRガード
+
+    const scriptId = 'spotify-player-script';
+    if (!document.getElementById(scriptId)) {
       const scriptTag = document.createElement('script');
-      scriptTag.id = 'spotify-player';
+      scriptTag.id = scriptId;
       scriptTag.src = 'https://sdk.scdn.co/spotify-player.js';
       scriptTag.async = true;
       document.body.appendChild(scriptTag);
@@ -175,122 +165,145 @@ export default function PlayerPage() {
   }, []);
 
   /**
-   * (D) SDKロード後にプレイヤーを初期化
-   *     コンポーネントアンマウント時には disconnect()
+   * 5) プレイヤー生成
    */
   useEffect(() => {
     if (!session?.accessToken) return;
+    if (typeof window === 'undefined') return;
+    if (player) return; // すでにプレイヤーがあれば作り直さない
 
-    // コールバックが既に設定されていない場合のみ設定する
+    const initializePlayer = () => {
+      if (!window.Spotify) return;
+      console.log('Initializing Spotify Player...');
+
+      const newPlayer = new window.Spotify.Player({
+        name: 'My Web Player',
+        getOAuthToken: (cb) => {
+          cb(session.accessToken as string);
+        },
+        volume: 0.5,
+      });
+
+      newPlayer.addListener('ready', (arg) => {
+        if (!arg) return;
+        const event = arg as PlayerReadyEvent;
+        console.log('Ready with Device ID', event.device_id);
+        setDeviceId(event.device_id);
+      });
+
+      newPlayer.addListener('not_ready', (arg) => {
+        if (!arg) return;
+        const event = arg as PlayerNotReadyEvent;
+        console.log('Device ID has gone offline', event.device_id);
+      });
+
+      newPlayer.addListener('player_state_changed', (state) => {
+        if (!state) return;
+        const ps = state as PlaybackState;
+        setIsPaused(ps.paused);
+        setPosition(ps.position);
+        setDuration(ps.duration);
+
+        const currentTrack = ps.track_window.current_track;
+        setTrackName(currentTrack.name);
+        setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
+        setAlbumImage(currentTrack.album.images?.[0]?.url || '');
+      });
+
+      newPlayer.connect();
+      setPlayer(newPlayer);
+    };
+
     if (!window.onSpotifyWebPlaybackSDKReady) {
       window.onSpotifyWebPlaybackSDKReady = () => {
-        if (!window.Spotify) return;
-        const newPlayer = new window.Spotify.Player({
-          name: 'My Web Player',
-          getOAuthToken: (cb: (token: string) => void) => {
-            // 最新のアクセストークンを渡す
-            cb(session.accessToken as string);
-          },
-          volume: 0.5,
-        });
-
-        // デバイスが ready のとき
-        newPlayer.addListener('ready', (arg) => {
-          if (!arg) return;
-          const event = arg as PlayerReadyEvent;
-          console.log('Ready with Device ID', event.device_id);
-          setDeviceId(event.device_id);
-        });
-
-        // デバイスが not_ready のとき
-        newPlayer.addListener('not_ready', (arg) => {
-          if (!arg) return;
-          const event = arg as PlayerNotReadyEvent;
-          console.log('Device ID has gone offline', event.device_id);
-        });
-
-        // 再生状態が変わるたびに呼ばれる
-        newPlayer.addListener('player_state_changed', (state) => {
-          if (!state) return;
-          const ps = state as PlaybackState;
-          setIsPaused(ps.paused);
-          setPosition(ps.position);
-          setDuration(ps.duration);
-
-          // 曲が切り替わった場合にトラック情報を上書き
-          const currentTrack = ps.track_window.current_track;
-          setTrackName(currentTrack.name);
-          setTrackArtists(currentTrack.artists.map((a) => a.name).join(', '));
-          setAlbumImage(currentTrack.album.images?.[0]?.url || '');
-        });
-
-        newPlayer.connect();
-        setPlayer(newPlayer);
+        console.log('SDK loaded → onSpotifyWebPlaybackSDKReady called.');
+        initializePlayer();
       };
     }
 
-    // アンマウント時にdisconnect
-    return () => {
-      if (player) {
-        player.disconnect();
-      }
-    };
+    if (window.Spotify) {
+      initializePlayer();
+    }
   }, [session?.accessToken, player]);
 
   /**
-   * (E) setInterval で 1秒おきにプレイヤーの状態を取得し、
-   *     isPaused が false (再生中) のときだけ position/duration を更新
+   * 6) プレイヤーのクリーンアップ
+   */
+  useEffect(() => {
+    // 「player が変化したとき」「アンマウント時」に前の player をdisconnect
+    return () => {
+      if (player) {
+        console.log('Disconnecting old player...');
+        player.disconnect();
+      }
+    };
+  }, [player]);
+
+  /**
+   * 7) ポーリングで再生状態を更新 (1秒おき)
    */
   useEffect(() => {
     if (!player) return;
+
     const interval = setInterval(async () => {
-      try {
-        // 再生中のみポーリングして現在位置を更新
-        if (!isPaused) {
+      if (!isPaused) {
+        try {
           const state = await player.getCurrentState?.();
           if (state) {
             setPosition(state.position);
             setDuration(state.duration);
           }
+        } catch (err) {
+          console.error('Error polling player state:', err);
         }
-      } catch (err) {
-        console.error('Error polling player state:', err);
       }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [player, isPaused]);
 
-  // 曲の再生
+  /**
+   * 8) 画面遷移時に曲を一時停止する
+   *    → routeChangeStart イベントをフックして player.pause() を呼ぶ
+   */
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (player) {
+        console.log('Route change detected. Pausing track...');
+        player.pause().catch((err) => console.error('Error pausing on route change:', err));
+      }
+    };
+
+    router.events.on('routeChangeStart', handleRouteChange);
+
+    return () => {
+      router.events.off('routeChangeStart', handleRouteChange);
+    };
+  }, [router, player]);
+
+  /* ========== 再生・停止・シークなどの操作関数 ========== */
   const handlePlay = async () => {
     if (!session?.accessToken || !deviceId || !selectedTrackId) return;
+
     try {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-        body: JSON.stringify({
-          uris: [`spotify:track:${selectedTrackId}`],
-        }),
-      });
+      await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify({
+            uris: [`spotify:track:${selectedTrackId}`],
+          }),
+        }
+      );
     } catch (error) {
       console.error('Error playing track:', error);
     }
   };
 
-  // 一時停止
-  const handlePause = async () => {
-    if (!player) return;
-    try {
-      await player.pause();
-    } catch (error) {
-      console.error('Error pausing track:', error);
-    }
-  };
-
-  // スライダーを動かしてシーク
   const handleSeek = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!player) return;
     const newPosition = Number(event.target.value);
@@ -301,10 +314,10 @@ export default function PlayerPage() {
     }
   };
 
-  // ページ遷移
+  /* ========== ページ遷移 ========== */
   const handleGotoDialogue = () => {
     router.push({
-      pathname: '/phasesA/dialog',
+      pathname: '/ipad/phaseA/dialog',
       query: {
         session_id,
         phase_id,
@@ -314,14 +327,7 @@ export default function PlayerPage() {
     });
   };
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-  if (!session) {
-    return <div>Please login...</div>;
-  }
-
-  // 分:秒 表示用の関数
+  /* ========== ユーティリティ: 時間表示 ========== */
   const formatTime = (ms: number) => {
     const totalSec = Math.floor(ms / 1000);
     const min = Math.floor(totalSec / 60);
@@ -329,65 +335,68 @@ export default function PlayerPage() {
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="p-4">
-      <h1>曲の再生ページ</h1>
-      <p>状態: {isPaused ? '停止中' : '再生中'}</p>
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+  if (!session) {
+    return <div>Please login...</div>;
+  }
 
-      <div className="mt-4">
+  return (
+    <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
+      <h1 className="text-3xl font-bold mb-4">曲の再生ページ</h1>
+      <p className="text-xl mb-4">
+        状態: {isPaused ? '停止中' : '再生中'}
+      </p>
+  
+      <div className="mb-4">
         <button
           onClick={handlePlay}
-          className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="px-6 py-3 bg-green-600 text-white text-lg rounded hover:bg-green-700"
         >
           再生
         </button>
-        <button
-          onClick={handlePause}
-          className="mt-2 ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          一時停止
-        </button>
       </div>
-
+  
       {/* 楽曲情報の表示 */}
       {trackName && (
-        <div className="mt-6 flex items-center">
+        <div className="flex items-center mb-4">
           {albumImage && (
             <Image
               src={albumImage}
               alt="Album Cover"
-              width={80}
-              height={80}
-              style={{ width: '80px', height: '80px', marginRight: '1rem' }}
+              width={120}
+              height={120}
+              className="mr-4 rounded"
             />
           )}
           <div>
-            <p className="font-bold">{trackName}</p>
-            <p className="text-sm text-gray-500">{trackArtists}</p>
+            <p className="text-2xl font-bold">{trackName}</p>
+            <p className="text-lg text-gray-600">{trackArtists}</p>
           </div>
         </div>
       )}
-
+  
       {/* 再生位置とスライダー */}
-      <div className="mt-4">
+      <div className="w-full mb-4">
         <input
           type="range"
           min={0}
           max={duration}
           value={position}
           onChange={handleSeek}
-          style={{ width: '100%' }}
+          className="w-full"
         />
-        <div className="flex justify-between text-sm mt-1">
+        <div className="flex justify-between text-lg mt-1">
           <span>{formatTime(position)}</span>
           <span>{formatTime(duration)}</span>
         </div>
       </div>
-
-      <div className="mt-6">
+  
+      <div className="mt-auto">
         <button
           onClick={handleGotoDialogue}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full py-4 bg-blue-600 text-white text-2xl rounded hover:bg-blue-700"
         >
           対話セクションに移動する
         </button>
