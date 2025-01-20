@@ -84,7 +84,8 @@ export default function PhasesPage() {
     const { data, error } = await supabase
       .from('phases')
       .select('select_tracks')
-      .eq('select_tracks_user_id', userId);
+      .eq('select_tracks_user_id', userId)
+      .eq('session_id', session_id)
 
     if (error) {
       console.error('Error fetching already selected tracks:', error);
@@ -97,7 +98,7 @@ export default function PhasesPage() {
     // select_tracks カラムには1つのトラックID(string)が入っている想定
     const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
     return selectedIds;
-  }, []);
+  }, [session_id]);
 
   /**
    * Supabase から楽曲を取得し、条件に合った**最大4件**をランダムで返す
@@ -428,8 +429,8 @@ export default function PhasesPage() {
                     <Image
                       src={track.image_url}
                       alt={track.name}
-                      width={150}
-                      height={150}
+                      width={100}
+                      height={100}
                       className="object-cover rounded-md"
                     />
                   )}
