@@ -51,8 +51,7 @@ export default function PhasesPage() {
   const [userBTracks, setUserBTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
 
-  // ▼ 追加: ログに保存する際に使うために、取得した楽曲を方向別に state で保持
-  //         今回は単純に「ユーザーA用」「ユーザーB用」で保持。実際に選ぶときにlogsに入れる。
+  // 推奨曲をログに入れるための state
   const [recommendedTracksForA, setRecommendedTracksForA] = useState<TrackData[]>([]);
   const [recommendedTracksForB, setRecommendedTracksForB] = useState<TrackData[]>([]);
 
@@ -95,13 +94,13 @@ export default function PhasesPage() {
       return [];
     }
 
-    // select_tracks カラムには1つのトラックID(string)が入っている想定なので単純に配列化
+    // select_tracks カラムには1つのトラックID(string)が入っている想定
     const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
     return selectedIds;
   }, []);
 
   /**
-   * Supabase から楽曲を取得し、条件に合った3件をランダムで返す
+   * Supabase から楽曲を取得し、条件に合った**最大4件**をランダムで返す
    */
   const fetchRecommendedTracks = useCallback(
     async (userId: string, phase: number) => {
@@ -122,9 +121,8 @@ export default function PhasesPage() {
         .neq('self_disclosure_level', 0)
         .in('self_disclosure_level', preferred);
 
-      // 過去選択したものを除外
+      // 過去に選択した曲を除外
       if (alreadySelectedTrackIds.length > 0) {
-        // PostgreSQL のクエリ的に "('id1','id2')" という文字列を作る
         const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
         query = query.not('spotify_track_id', 'in', excludeList);
       }
@@ -137,8 +135,8 @@ export default function PhasesPage() {
 
       let combined: TrackData[] = preferredData || [];
 
-      // --- (2) 3件に満たない場合はフォールバックの曲を追加 ---
-      if (combined.length < 3 && fallback.length > 0) {
+      // --- (2) 4件に満たない場合はフォールバックを追加 ---
+      if (combined.length < 4 && fallback.length > 0) {
         let fallbackQuery = supabase
           .from('tracks')
           .select('*')
@@ -146,7 +144,6 @@ export default function PhasesPage() {
           .neq('self_disclosure_level', 0)
           .in('self_disclosure_level', fallback);
 
-        // 過去選択したものを除外
         if (alreadySelectedTrackIds.length > 0) {
           const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
           fallbackQuery = fallbackQuery.not('spotify_track_id', 'in', excludeList);
@@ -160,8 +157,8 @@ export default function PhasesPage() {
         }
       }
 
-      // --- (3) シャッフルして先頭3件を返す ---
-      const shuffled = combined.sort(() => 0.5 - Math.random()).slice(0, 3);
+      // --- (3) シャッフルして先頭4件を返す ---
+      const shuffled = combined.sort(() => 0.5 - Math.random()).slice(0, 4);
       return shuffled;
     },
     [fetchAlreadySelectedTrackIds]
@@ -179,7 +176,7 @@ export default function PhasesPage() {
       setUserATracks(userATrackList);
       setUserBTracks(userBTrackList);
 
-      // ▼ 追加：ログに使うために、推奨された楽曲をstateに保持しておく
+      // 推奨された楽曲を state に保持
       setRecommendedTracksForA(userATrackList);
       setRecommendedTracksForB(userBTrackList);
     };
@@ -205,18 +202,18 @@ export default function PhasesPage() {
     }
     const userASpotifyId = userAData.spotify_user_id;
 
-    // ▼ 追加実装：logsテーブルへインサート
+    // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
         .from('logs')
         .insert([
           {
-            session_id: session_id,             // どのセッションか
-            phase_id: phase_id,                 // どのフェーズか
-            user_id: userASpotifyId,            // 誰が曲を選択しているか
-            recommended_tracks: recommendedTracksForA, // 推奨された楽曲3件をそのままJSONに
-            selected_track: selectedTrack       // 選択したトラックID
-          }
+            session_id: session_id,
+            phase_id: phase_id,
+            user_id: userASpotifyId,
+            recommended_tracks: recommendedTracksForA,
+            selected_track: selectedTrack,
+          },
         ]);
 
       if (logError) {
@@ -228,7 +225,7 @@ export default function PhasesPage() {
       return;
     }
 
-    // ▼ ここから既存のフェーズ更新処理
+    // phasesテーブル更新
     const { error } = await supabase
       .from('phases')
       .update({
@@ -268,7 +265,7 @@ export default function PhasesPage() {
     }
     const userBSpotifyId = userBData.spotify_user_id;
 
-    // ▼ 追加実装：logsテーブルへインサート
+    // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
         .from('logs')
@@ -278,8 +275,8 @@ export default function PhasesPage() {
             phase_id: phase_id,
             user_id: userBSpotifyId,
             recommended_tracks: recommendedTracksForB,
-            selected_track: selectedTrack
-          }
+            selected_track: selectedTrack,
+          },
         ]);
 
       if (logError) {
@@ -291,7 +288,7 @@ export default function PhasesPage() {
       return;
     }
 
-    // ▼ ここから既存のフェーズ更新処理
+    // phasesテーブル更新
     const { error } = await supabase
       .from('phases')
       .update({
@@ -318,7 +315,9 @@ export default function PhasesPage() {
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
           <h1 className="text-3xl font-bold mb-4">実験はここまでです！</h1>
-          <h1 className="text-2xl font-bold mb-2">部屋を出て中川まで声をかけてください</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            部屋を出て中川まで声をかけてください
+          </h1>
         </div>
       </div>
     );
@@ -327,12 +326,14 @@ export default function PhasesPage() {
   if (directionNum === 1) {
     // ユーザーAが選ぶ画面
     return (
-      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
-        <div className="flex-grow overflow-auto">
+      <div className="flex flex-col w-screen h-screen bg-gray-100">
+        <div className="flex-grow overflow-auto p-6">
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
-          <PageTimer />
+          <div className="absolute top-4 left-4 px-4 py-2">
+            <PageTimer />
+          </div>
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
@@ -340,12 +341,17 @@ export default function PhasesPage() {
           {userATracks.length === 0 ? (
             <p className="text-center text-xl">楽曲がありません。</p>
           ) : (
-            <div className="flex flex-col items-center gap-8">
+            // 2×2の形で表示（最大4曲）
+            <div className="grid grid-cols-2 gap-4">
               {userATracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
-                  className={`relative w-full max-w-md border rounded-lg p-4 shadow cursor-pointer
-                    ${selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'}
+                  className={`relative flex flex-col items-start border rounded-lg p-4 shadow cursor-pointer
+                    ${
+                      selectedTrack === track.spotify_track_id
+                        ? 'border-green-500'
+                        : 'border-gray-300'
+                    }
                   `}
                   onClick={() => setSelectedTrack(track.spotify_track_id)}
                 >
@@ -353,12 +359,12 @@ export default function PhasesPage() {
                     <Image
                       src={track.image_url}
                       alt={track.name}
-                      width={70}
-                      height={70}
-                      className="object-cover rounded-md"
+                      width={100}
+                      height={100}
+                      className="object-cover rounded-sm"
                     />
                   )}
-                  <div className="ml-4">
+                  <div className="mt-2">
                     <h2 className="font-semibold text-lg">{track.name}</h2>
                     <p className="text-sm text-gray-600">{track.album_name}</p>
                     <p className="text-sm text-gray-500">{track.artist_name}</p>
@@ -374,7 +380,7 @@ export default function PhasesPage() {
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="p-6">
           <button
             onClick={handleSelectUserATracks}
             className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
@@ -390,12 +396,14 @@ export default function PhasesPage() {
   if (directionNum === 2) {
     // ユーザーBが選ぶ画面
     return (
-      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
-        <div className="flex-grow overflow-auto">
+      <div className="flex flex-col w-screen h-screen bg-gray-100">
+        <div className="flex-grow overflow-auto p-6">
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
-          <PageTimer />
+          <div className="absolute top-4 left-4 px-4 py-2">
+            <PageTimer />
+          </div>
           <p className="mb-6 text-center text-lg">
             以下の楽曲から1つ選んでください。
           </p>
@@ -403,12 +411,16 @@ export default function PhasesPage() {
           {userBTracks.length === 0 ? (
             <p className="text-center text-xl">楽曲がありません。</p>
           ) : (
-            <div className="flex flex-col items-center gap-8">
+            <div className="grid grid-cols-2 gap-4">
               {userBTracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
-                  className={`relative w-full max-w-md border rounded-lg p-4 shadow cursor-pointer
-                    ${selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'}
+                  className={`relative flex flex-col items-start border rounded-lg p-4 shadow cursor-pointer
+                    ${
+                      selectedTrack === track.spotify_track_id
+                        ? 'border-green-500'
+                        : 'border-gray-300'
+                    }
                   `}
                   onClick={() => setSelectedTrack(track.spotify_track_id)}
                 >
@@ -416,12 +428,12 @@ export default function PhasesPage() {
                     <Image
                       src={track.image_url}
                       alt={track.name}
-                      width={70}
-                      height={70}
+                      width={150}
+                      height={150}
                       className="object-cover rounded-md"
                     />
                   )}
-                  <div className="ml-4">
+                  <div className="mt-2">
                     <h2 className="font-semibold text-lg">{track.name}</h2>
                     <p className="text-sm text-gray-600">{track.album_name}</p>
                     <p className="text-sm text-gray-500">{track.artist_name}</p>
@@ -437,7 +449,7 @@ export default function PhasesPage() {
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="p-6">
           <button
             onClick={handleSelectUserBTracks}
             className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
