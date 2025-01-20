@@ -6,6 +6,14 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
+// 文字列が長い場合にフォントサイズをさらに落とすための簡易ユーティリティ関数
+function getTextSizeClass(str: string) {
+  if (str.length > 30) {
+    return 'text-xs';
+  }
+  return 'text-sm';
+}
+
 type TrackData = {
   spotify_track_id: string;
   user_id: string;
@@ -196,7 +204,9 @@ export default function PhasesPage() {
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
           <h1 className="text-3xl font-bold mb-4">実験はここまでです！</h1>
-          <h1 className="text-2xl font-bold mb-2">部屋を出て中川まで声をかけてください</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            部屋を出て中川まで声をかけてください
+          </h1>
         </div>
       </div>
     );
@@ -205,8 +215,9 @@ export default function PhasesPage() {
   // directionNum === 1 (ユーザーAが曲を選ぶ) の画面
   if (directionNum === 1) {
     return (
-      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
-        <div className="flex-grow overflow-auto">
+      <div className="flex flex-col w-screen h-screen bg-gray-100">
+        {/* メインコンテンツ部分をスクロール領域とし、p-6 で余白 */}
+        <div className="flex-grow overflow-auto p-6">
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
@@ -215,7 +226,7 @@ export default function PhasesPage() {
             以下の楽曲から1つ選んでください。
           </p>
 
-          {/* 追加: 検索入力欄 */}
+          {/* 検索入力欄 */}
           <div className="mb-4 flex justify-center">
             <input
               className="border border-gray-300 rounded-md p-2 w-64"
@@ -229,45 +240,63 @@ export default function PhasesPage() {
           {filteredUserATracks.length === 0 ? (
             <p className="text-center text-xl">該当する楽曲がありません。</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {filteredUserATracks.map((track) => (
-                <div
-                  key={track.spotify_track_id}
-                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${selectedTrack === track.spotify_track_id
-                    ? 'border-green-500'
-                    : 'border-gray-300'
-                    }`}
-                  onClick={() => setSelectedTrack(track.spotify_track_id)}
-                >
-                  {track.image_url && (
-                    <Image
-                      src={track.image_url}
-                      alt={track.name}
-                      width={70}
-                      height={70}
-                      className="object-cover rounded-md"
-                    />
-                  )}
-                  <div className="ml-4">
-                    <h2 className="font-semibold text-lg">{track.name}</h2>
-                    <p className="text-sm text-gray-600">{track.album_name}</p>
-                    <p className="text-sm text-gray-500">{track.artist_name}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {filteredUserATracks.map((track) => {
+                return (
+                  <div
+                    key={track.spotify_track_id}
+                    // カードの余白や文字サイズを小さめに
+                    className={`relative flex items-center border rounded-md p-2 shadow-sm cursor-pointer transition-transform hover:scale-105
+                      ${
+                        selectedTrack === track.spotify_track_id
+                          ? 'border-blue-500'
+                          : 'border-gray-300'
+                      }
+                    `}
+                    onClick={() => setSelectedTrack(track.spotify_track_id)}
+                  >
+                    {track.image_url && (
+                      <Image
+                        src={track.image_url}
+                        alt={track.name}
+                        width={50}
+                        height={50}
+                        className="object-cover rounded-md"
+                      />
+                    )}
+                    {/* 文字列が長い場合は文字サイズを小さくし、truncate で折り返しを防止 */}
+                    <div className="ml-2 w-3/4">
+                      <h2
+                        className={`${getTextSizeClass(
+                          track.name
+                        )} font-semibold w-full truncate`}
+                      >
+                        {track.name}
+                      </h2>
+                      <p className="text-xs text-gray-600 truncate">
+                        {track.album_name}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {track.artist_name}
+                      </p>
+                    </div>
+                    {selectedTrack === track.spotify_track_id && (
+                      <span className="absolute top-1 right-1 text-blue-500 font-semibold text-xs">
+                        選択中
+                      </span>
+                    )}
                   </div>
-                  {selectedTrack === track.spotify_track_id && (
-                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
-                      選択中
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        <div className="mt-4">
+        {/* 画面下部に固定のボタン */}
+        <div className="p-6">
           <button
             onClick={handleSelectUserATracks}
-            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
+            className="w-full py-4 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700"
             disabled={!selectedTrack}
           >
             曲を決定する
@@ -280,8 +309,8 @@ export default function PhasesPage() {
   // directionNum === 2 (ユーザーBが曲を選ぶ) の画面
   if (directionNum === 2) {
     return (
-      <div className="flex flex-col w-screen h-screen bg-gray-100 p-6">
-        <div className="flex-grow overflow-auto">
+      <div className="flex flex-col w-screen h-screen bg-gray-100">
+        <div className="flex-grow overflow-auto p-6">
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
@@ -290,7 +319,7 @@ export default function PhasesPage() {
             以下の楽曲から1つ選んでください。
           </p>
 
-          {/* 追加: 検索入力欄 */}
+          {/* 検索入力欄 */}
           <div className="mb-4 flex justify-center">
             <input
               className="border border-gray-300 rounded-md p-2 w-64"
@@ -304,32 +333,45 @@ export default function PhasesPage() {
           {filteredUserBTracks.length === 0 ? (
             <p className="text-center text-xl">該当する楽曲がありません。</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {filteredUserBTracks.map((track) => (
                 <div
                   key={track.spotify_track_id}
-                  className={`relative flex items-center border rounded-lg p-4 shadow cursor-pointer ${selectedTrack === track.spotify_track_id
-                    ? 'border-green-500'
-                    : 'border-gray-300'
-                    }`}
+                  className={`relative flex items-center border rounded-md p-2 shadow-sm cursor-pointer transition-transform hover:scale-105
+                    ${
+                      selectedTrack === track.spotify_track_id
+                        ? 'border-blue-500'
+                        : 'border-gray-300'
+                    }
+                  `}
                   onClick={() => setSelectedTrack(track.spotify_track_id)}
                 >
                   {track.image_url && (
                     <Image
                       src={track.image_url}
                       alt={track.name}
-                      width={70}
-                      height={70}
+                      width={50}
+                      height={50}
                       className="object-cover rounded-md"
                     />
                   )}
-                  <div className="ml-4">
-                    <h2 className="font-semibold text-lg">{track.name}</h2>
-                    <p className="text-sm text-gray-600">{track.album_name}</p>
-                    <p className="text-sm text-gray-500">{track.artist_name}</p>
+                  <div className="ml-2 w-3/4">
+                    <h2
+                      className={`${getTextSizeClass(
+                        track.name
+                      )} font-semibold w-full truncate`}
+                    >
+                      {track.name}
+                    </h2>
+                    <p className="text-xs text-gray-600 truncate">
+                      {track.album_name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {track.artist_name}
+                    </p>
                   </div>
                   {selectedTrack === track.spotify_track_id && (
-                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
+                    <span className="absolute top-1 right-1 text-blue-500 font-semibold text-xs">
                       選択中
                     </span>
                   )}
@@ -339,10 +381,10 @@ export default function PhasesPage() {
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="p-6">
           <button
             onClick={handleSelectUserBTracks}
-            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
+            className="w-full py-4 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700"
             disabled={!selectedTrack}
           >
             曲を決定する
@@ -351,4 +393,6 @@ export default function PhasesPage() {
       </div>
     );
   }
+
+  return null;
 }
