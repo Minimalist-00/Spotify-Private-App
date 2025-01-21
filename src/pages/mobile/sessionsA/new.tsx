@@ -1,4 +1,4 @@
-// pages/sessions/new.tsx
+// pages/sessions2/new.tsx
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
@@ -13,8 +13,8 @@ type UserData = {
 export default function NewSessionPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
-  const [userA, setUserA] = useState('');       // sessions.user_a
-  const [userB, setUserB] = useState('');       // sessions.user_b
+  const [userA, setUserA] = useState('');       // sessions2.user_a
+  const [userB, setUserB] = useState('');       // sessions2.user_b
   const [directions, setDirections] = useState<number>(1); // 1=自分先, 0=相手先
 
   useEffect(() => {
@@ -33,9 +33,9 @@ export default function NewSessionPage() {
 
   const handleCreateSession = async () => {
     try {
-      // 1) sessionsに INSERT
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('sessions')
+      // 1) sessions2に INSERT
+      const { data: sessions2Data, error: sessions2Error } = await supabase
+        .from('sessions2')
         .insert([
           {
             user_a: userA,
@@ -45,16 +45,16 @@ export default function NewSessionPage() {
         ])
         .select(); // returning
 
-      if (sessionsError) {
-        console.error('Error inserting into sessions:', sessionsError);
+      if (sessions2Error) {
+        console.error('Error inserting into sessions2:', sessions2Error);
         alert('セッション作成に失敗しました');
         return;
       }
-      if (!sessionsData || sessionsData.length === 0) {
+      if (!sessions2Data || sessions2Data.length === 0) {
         alert('セッション作成に失敗しました(データなし)');
         return;
       }
-      const newSession = sessionsData[0];
+      const newSession = sessions2Data[0];
       console.log('Created session:', newSession);
 
       // 2) phasesに INSERT (session_id & directions=1)

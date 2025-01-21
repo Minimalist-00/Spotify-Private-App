@@ -16,14 +16,14 @@ export async function saveTracksToSupabase(tracks: TrackToSave[]): Promise<void>
   if (tracks.length === 0) return;
 
   // まずは user_id と track_id を抜き出す
-  const userId = tracks[0].user_id; 
+  const userId = tracks[0].user_id;
   // （基本的には同一ユーザーでまとめて渡してくる想定とする）
 
   const trackIds = tracks.map((track) => track.spotify_track_id);
 
   // 既存のレコードを取得 (同じ user_id & trackIds のレコードのみ)
   const { data: existingTracks, error: fetchError } = await supabase
-    .from('tracks')
+    .from('track2')
     .select('spotify_track_id, user_id, song_favorite_level, can_singing')
     .eq('user_id', userId)
     .in('spotify_track_id', trackIds);
@@ -56,9 +56,9 @@ export async function saveTracksToSupabase(tracks: TrackToSave[]): Promise<void>
   // マージ後のデータをアップサート
   // Supabase 側で UNIQUE(spotify_track_id, user_id) が設定されている前提
   const { data, error } = await supabase
-    .from('tracks')
+    .from('track2')
     .upsert(mergedTracks, {
-      onConflict: 'spotify_track_id,user_id', 
+      onConflict: 'spotify_track_id, user_id',
     });
 
   if (error) {

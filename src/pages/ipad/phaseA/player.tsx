@@ -120,7 +120,7 @@ export default function PlayerPage() {
     if (!phase_id) return;
     const fetchPhase = async () => {
       const { data, error } = await supabase
-        .from('phases')
+        .from('phases2')
         .select('select_tracks')
         .eq('id', phase_id)
         .single();

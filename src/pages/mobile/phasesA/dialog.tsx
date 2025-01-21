@@ -10,17 +10,17 @@ export default function DialogPage() {
 
   const [sessionDirections, setSessionDirections] = useState<number | null>(null);
 
-  // 1) DBの sessions.directions を取得
+  // 1) DBの sessions2.directions を取得
   useEffect(() => {
     if (!session_id) return;
     const fetchSessionDirections = async () => {
       const { data, error } = await supabase
-        .from('sessions')
+        .from('sessions2')
         .select('directions')
         .eq('id', session_id)
         .single();
       if (error || !data) {
-        console.error('Failed to fetch sessions.directions', error);
+        console.error('Failed to fetch sessions2.directions', error);
         return;
       }
       setSessionDirections(data.directions);

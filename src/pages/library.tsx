@@ -57,7 +57,7 @@ export default function TrackClassificationPage() {
 
     const fetchTracks = async () => {
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .eq('user_id', userId);
 
@@ -159,7 +159,7 @@ export default function TrackClassificationPage() {
       // 成功時 => updatedTracksクリア & DB再取得
       setUpdatedTracks(new Map());
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .eq('user_id', userId);
       if (error) {
@@ -229,7 +229,7 @@ export default function TrackClassificationPage() {
         console.error('Failed to upsert track', await res.text());
       } else {
         const { data, error } = await supabase
-          .from('tracks')
+          .from('track2')
           .select('*')
           .eq('user_id', userId);
         if (!error && data) {

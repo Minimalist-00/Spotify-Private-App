@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // DBから関連するtracksデータをfetch
       const { data: trackData, error: fetchError } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('spotify_track_id, popularity') // 必要なカラムだけ取得
         .in('spotify_track_id', spotifyTrackIds);
 
@@ -85,9 +85,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Supabaseの upsert で一括保存
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .upsert(updatesWithDisclosure, {
-          onConflict: 'spotify_track_id',
+          onConflict: 'spotify_track_id, user_id',
         });
 
       if (error) {
