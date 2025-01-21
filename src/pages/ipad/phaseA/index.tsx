@@ -47,7 +47,7 @@ export default function PhasesPage() {
 
     const fetchSessionUsers = async () => {
       const { data, error } = await supabase
-        .from('sessions')
+        .from('sessions2')
         .select('user_a, user_b')
         .eq('id', session_id)
         .single();
@@ -69,7 +69,7 @@ export default function PhasesPage() {
 
     const fetchUserATracks = async () => {
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .neq('self_disclosure_level', 0)
         .eq('user_id', userA);
@@ -85,7 +85,7 @@ export default function PhasesPage() {
 
     const fetchUserBTracks = async () => {
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .neq('self_disclosure_level', 0)
         .eq('user_id', userB);
@@ -132,7 +132,7 @@ export default function PhasesPage() {
     const userASpotifyId = userAData.spotify_user_id;
 
     const { error: upError } = await supabase
-      .from('phases')
+      .from('phases2')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userASpotifyId,
@@ -175,7 +175,7 @@ export default function PhasesPage() {
     const userBSpotifyId = userBData.spotify_user_id;
 
     const { error: upError } = await supabase
-      .from('phases')
+      .from('phases2')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userBSpotifyId,

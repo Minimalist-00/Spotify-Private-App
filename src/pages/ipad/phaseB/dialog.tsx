@@ -22,7 +22,7 @@ export default function DialogPage() {
     if (urlDirections === 1) {
       try {
         const { data: phasesData, error: phasesError } = await supabase
-          .from('phases')
+          .from('phases2')
           .insert([
             {
               session_id: session_id,
@@ -59,7 +59,7 @@ export default function DialogPage() {
       newPhaseNum = phaseNum + 1;
 
       const { data: phasesData, error: phasesError } = await supabase
-        .from('phases')
+        .from('phases2')
         .insert([
           {
             session_id: session_id,

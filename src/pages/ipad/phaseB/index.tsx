@@ -60,7 +60,7 @@ export default function PhasesPage() {
 
     const fetchSessionUsers = async () => {
       const { data, error } = await supabase
-        .from('sessions')
+        .from('sessions2')
         .select('user_a, user_b')
         .eq('id', session_id)
         .single();
@@ -82,9 +82,9 @@ export default function PhasesPage() {
   const fetchAlreadySelectedTrackIds = useCallback(async (userId: string) => {
     // phasesテーブルの select_tracks_user_id が該当ユーザーになっている行の select_tracks を収集
     const { data, error } = await supabase
-      .from('phases')
-      .select('select_tracks')
-      .eq('select_tracks_user_id', userId)
+      .from('logs2')
+      .select('selected_track')
+      .eq('user_id', userId)
       .eq('session_id', session_id)
 
     if (error) {
@@ -96,7 +96,7 @@ export default function PhasesPage() {
     }
 
     // select_tracks カラムには1つのトラックID(string)が入っている想定
-    const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
+    const selectedIds = data.map((row) => row.selected_track).filter(Boolean);
     return selectedIds;
   }, [session_id]);
 
@@ -116,7 +116,7 @@ export default function PhasesPage() {
 
       // --- (1) 優先度の高い self_disclosure_level の曲を取得 (0 は除外) ---
       let query = supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .eq('user_id', userId)
         .neq('self_disclosure_level', 0)
@@ -139,7 +139,7 @@ export default function PhasesPage() {
       // --- (2) 4件に満たない場合はフォールバックを追加 ---
       if (combined.length < 4 && fallback.length > 0) {
         let fallbackQuery = supabase
-          .from('tracks')
+          .from('track2')
           .select('*')
           .eq('user_id', userId)
           .neq('self_disclosure_level', 0)
@@ -206,7 +206,7 @@ export default function PhasesPage() {
     // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
-        .from('logs')
+        .from('logs2')
         .insert([
           {
             session_id: session_id,
@@ -228,7 +228,7 @@ export default function PhasesPage() {
 
     // phasesテーブル更新
     const { error } = await supabase
-      .from('phases')
+      .from('phases2')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userASpotifyId,
@@ -269,7 +269,7 @@ export default function PhasesPage() {
     // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
-        .from('logs')
+        .from('logs2')
         .insert([
           {
             session_id: session_id,
@@ -291,7 +291,7 @@ export default function PhasesPage() {
 
     // phasesテーブル更新
     const { error } = await supabase
-      .from('phases')
+      .from('phases2')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userBSpotifyId,

@@ -30,7 +30,7 @@ export default function PhasesPage() {
 
     const fetchSessionUsers = async () => {
       const { data, error } = await supabase
-        .from('sessions')
+        .from('sessions2')
         .select('user_a')
         .eq('id', session_id)
         .single();
