@@ -23,7 +23,7 @@ function getPreferredAndFallbackLevels(phase: number) {
   switch (phase) {
     case 1:
     case 2:
-      return { preferred: [1], fallback: [] };
+      return { preferred: [1], fallback: [2] };
     case 3:
     case 4:
       return { preferred: [2], fallback: [1] };
@@ -380,7 +380,7 @@ export default function PhasesPage() {
           )}
         </div>
 
-        <div className="p-6 fixed bottom-0 left-0 right-0 p-6 bg-gray-100">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gray-100">
           <button
             onClick={handleSelectUserATracks}
             className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
