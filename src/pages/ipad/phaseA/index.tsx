@@ -85,7 +85,7 @@ export default function PhasesPage() {
 
     const fetchUserBTracks = async () => {
       const { data, error } = await supabase
-        .from('tracks')
+        .from('track2')
         .select('*')
         .neq('self_disclosure_level', 0)
         .eq('user_id', userB);
