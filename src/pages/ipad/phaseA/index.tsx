@@ -201,7 +201,7 @@ export default function PhasesPage() {
 
   if (phaseNumbersNum === 9) {
     return (
-      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100">
+      <div className="flex flex-col items-center justify-center w-screen h-[100dvh] bg-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-xl text-center">
           <h1 className="text-3xl font-bold mb-4">実験はここまでです！</h1>
           <h1 className="text-2xl font-bold mb-2">
@@ -308,8 +308,8 @@ export default function PhasesPage() {
   // directionNum === 2 (ユーザーBが曲を選ぶ) の画面
   if (directionNum === 2) {
     return (
-      <div className="flex flex-col w-screen h-screen bg-gray-100">
-        <div className="flex-grow overflow-auto p-6">
+      <div className="flex flex-col w-screen h-[100dvh] bg-gray-100">
+        <div className="flex-grow overflow-auto p-6 pb-24">
           <h1 className="text-3xl font-bold mb-4 text-center">
             {phaseNumbersNum} フェーズ目です
           </h1>
@@ -379,7 +379,7 @@ export default function PhasesPage() {
           )}
         </div>
 
-        <div className="p-6">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gray-100">
           <button
             onClick={handleSelectUserBTracks}
             className="w-full py-4 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700"
