@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 
 export default function DialogPage() {
   const router = useRouter();
-  const { session_id, phase_id, phase_numbers, directions } = router.query;
+  const { session_id,phase_numbers, directions } = router.query;
 
   const phaseNum = phase_numbers ? Number(phase_numbers) : 1;
   const urlDirections = directions ? Number(directions) : 1;
@@ -84,7 +84,7 @@ export default function DialogPage() {
         pathname: '/ipad/phaseA/forms', // index.tsx
         query: {
           session_id,
-          phase_id,
+          phase_id: newPhase.id,
           phase_numbers: newPhaseNum,
           directions: newDirections,
         },
