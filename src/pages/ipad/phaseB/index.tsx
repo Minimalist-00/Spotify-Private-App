@@ -79,12 +79,11 @@ export default function PhasesPage() {
   /**
    * 指定ユーザーがこれまでに選択したトラック ID リストを取得する
    */
-  const fetchAlreadySelectedTrackIds = useCallback(async (userId: string) => {
+  const fetchAlreadySelectedTrackIds = useCallback(async () => {
     // phasesテーブルの select_tracks_user_id が該当ユーザーになっている行の select_tracks を収集
     const { data, error } = await supabase
-      .from('logs2')
-      .select('selected_track')
-      .eq('user_id', userId)
+      .from('phases2')
+      .select('select_tracks')
       .eq('session_id', session_id)
 
     if (error) {
@@ -96,7 +95,7 @@ export default function PhasesPage() {
     }
 
     // select_tracks カラムには1つのトラックID(string)が入っている想定
-    const selectedIds = data.map((row) => row.selected_track).filter(Boolean);
+    const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
     return selectedIds;
   }, [session_id]);
 
@@ -112,7 +111,7 @@ export default function PhasesPage() {
       }
 
       // (A) このユーザーが過去に選択したトラックIDを全て取得
-      const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds(userId);
+      const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds();
 
       // --- (1) 優先度の高い self_disclosure_level の曲を取得 (0 は除外) ---
       let query = supabase
