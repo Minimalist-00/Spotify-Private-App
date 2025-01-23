@@ -8,14 +8,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'i.scdn.co',
-        port: '',
-        pathname: '/**',
+        pathname: '/image/**',
       },
       {
         protocol: 'https',
         hostname: 'mosaic.scdn.co',
-        port: '',
-        pathname: '/**',
+        pathname: '/image/**',
       },
     ],
   },
