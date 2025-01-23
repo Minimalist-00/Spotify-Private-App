@@ -79,12 +79,11 @@ export default function PhasesPage() {
   /**
    * 指定ユーザーがこれまでに選択したトラック ID リストを取得する
    */
-  const fetchAlreadySelectedTrackIds = useCallback(async (userId: string) => {
+  const fetchAlreadySelectedTrackIds = useCallback(async () => {
     // phasesテーブルの select_tracks_user_id が該当ユーザーになっている行の select_tracks を収集
     const { data, error } = await supabase
-      .from('logs2')
-      .select('selected_track')
-      .eq('user_id', userId)
+      .from('phases2')
+      .select('select_tracks')
       .eq('session_id', session_id)
 
     if (error) {
@@ -96,7 +95,8 @@ export default function PhasesPage() {
     }
 
     // select_tracks カラムには1つのトラックID(string)が入っている想定
-    const selectedIds = data.map((row) => row.selected_track).filter(Boolean);
+    const selectedIds = data.map((row) => row.select_tracks).filter(Boolean);
+    console.log(selectedIds);
     return selectedIds;
   }, [session_id]);
 
@@ -107,60 +107,39 @@ export default function PhasesPage() {
     async (userId: string, phase: number) => {
       const { preferred, fallback } = getPreferredAndFallbackLevels(phase);
       if (preferred.length === 0) {
-        // phase9 などの場合、曲を取得しない
         return [];
       }
 
-      // (A) このユーザーが過去に選択したトラックIDを全て取得
-      const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds(userId);
+      const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds();
 
-      // --- (1) 優先度の高い self_disclosure_level の曲を取得 (0 は除外) ---
-      let query = supabase
+      const { data: allTracks, error } = await supabase
         .from('track2')
         .select('*')
         .eq('user_id', userId)
-        .neq('self_disclosure_level', 0)
-        .in('self_disclosure_level', preferred);
+        .neq('self_disclosure_level', 0);
 
-      // 過去に選択した曲を除外
-      if (alreadySelectedTrackIds.length > 0) {
-        const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
-        query = query.not('spotify_track_id', 'in', excludeList);
-      }
-
-      const { data: preferredData, error: preferredError } = await query;
-      if (preferredError) {
-        console.error('Error fetching preferred tracks:', preferredError);
+      if (error) {
+        console.error('Error fetching all tracks:', error);
         return [];
       }
 
-      let combined: TrackData[] = preferredData || [];
+      // クライアントサイドでフィルタリング
+      const filteredTracks = allTracks
+        .filter((track) => preferred.includes(track.self_disclosure_level))
+        .filter((track) => !alreadySelectedTrackIds.includes(track.spotify_track_id));
 
-      // --- (2) 4件に満たない場合はフォールバックを追加 ---
-      if (combined.length < 4 && fallback.length > 0) {
-        let fallbackQuery = supabase
-          .from('track2')
-          .select('*')
-          .eq('user_id', userId)
-          .neq('self_disclosure_level', 0)
-          .in('self_disclosure_level', fallback);
+      // 必要に応じてフォールバックレベルの曲を追加
+      if (filteredTracks.length < 4 && fallback.length > 0) {
+        const fallbackTracks = allTracks
+          .filter((track) => fallback.includes(track.self_disclosure_level))
+          .filter((track) => !alreadySelectedTrackIds.includes(track.spotify_track_id));
 
-        if (alreadySelectedTrackIds.length > 0) {
-          const excludeList = `(${alreadySelectedTrackIds.map((id) => `'${id}'`).join(',')})`;
-          fallbackQuery = fallbackQuery.not('spotify_track_id', 'in', excludeList);
-        }
-
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-        if (fallbackError) {
-          console.error('Error fetching fallback tracks:', fallbackError);
-        } else if (fallbackData) {
-          combined = combined.concat(fallbackData);
-        }
+          console.log([...filteredTracks, ...fallbackTracks].sort(() => 0.5 - Math.random()).slice(0, 4));
+        return [...filteredTracks, ...fallbackTracks].sort(() => 0.5 - Math.random()).slice(0, 4);
       }
 
-      // --- (3) シャッフルして先頭4件を返す ---
-      const shuffled = combined.sort(() => 0.5 - Math.random()).slice(0, 4);
-      return shuffled;
+      console.log(filteredTracks.sort(() => 0.5 - Math.random()).slice(0, 4));
+      return filteredTracks.sort(() => 0.5 - Math.random()).slice(0, 4);
     },
     [fetchAlreadySelectedTrackIds]
   );
