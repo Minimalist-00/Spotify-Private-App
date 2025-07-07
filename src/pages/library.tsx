@@ -17,11 +17,9 @@ import {
   Radio,
   RadioGroup,
   Snackbar,
-  Tab,
-  Tabs,
   TextField,
   Toolbar,
-  Typography,
+  Typography
 } from '@mui/material';
 
 type TrackData = {
@@ -46,6 +44,12 @@ export default function TrackClassificationPage() {
 
   // 「保存が完了しました」通知用のステート
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // モバイル用のタブ切り替え
+  const [mobileTab, setMobileTab] = useState(0);
+
+  // PC用のタブ切り替え
+  const [pcTab, setPcTab] = useState(0);
 
   // DBからユーザーの楽曲一覧を取得
   useEffect(() => {
@@ -169,22 +173,6 @@ export default function TrackClassificationPage() {
     } catch (err) {
       console.error('Save error:', err);
     }
-  };
-
-  // ==========================
-  // モバイル用のタブ切り替え
-  // ==========================
-  const [mobileTab, setMobileTab] = useState(0);
-  const handleChangeMobileTab = (event: React.SyntheticEvent, newValue: number) => {
-    setMobileTab(newValue);
-  };
-
-  // ==========================
-  // PC用のタブ切り替え
-  // ==========================
-  const [pcTab, setPcTab] = useState(0);
-  const handleChangePcTab = (event: React.SyntheticEvent, newValue: number) => {
-    setPcTab(newValue);
   };
 
   // ==========================
@@ -589,61 +577,105 @@ export default function TrackClassificationPage() {
           </Toolbar>
         </AppBar>
 
-        <Container sx={{ flex: 1, py: 2 }}>
+        <Container sx={{ flex: 1, py: 2, background: { md: 'linear-gradient(135deg, #f0fdfa 0%, #e0e7ff 100%)' } }}>
           {/* 説明エリア */}
           <Box
             sx={{
               maxWidth: 800,
               mx: 'auto',
               mb: 3,
+              px: { xs: 0, md: 2 },
             }}
           >
-            <Alert
-              severity="info"
+            <Box
               sx={{
-                backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
+                background: '#fff',
+                borderRadius: 4,
+                boxShadow: '0 8px 32px 0 rgba(60,60,100,0.18), 0 1.5px 6px 0 rgba(30,30,60,0.10)',
+                p: { xs: 2, md: 3 },
+                fontSize: { xs: 15, md: 17 },
+                color: '#222',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              このページでは、「歌える自信(1~4)」と「思い入れの強さ(1~4)」を入力します。<br />
-              歌える自信は「その曲を歌うとき、どのくらい不安がないか」です。<br />
-              1: ほとんど自信がない ～ 4: とても自信がある<br />
-              <br />
-              思い入れは「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
-              1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
-              <br />
-              分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
-            </Alert>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#1DB954" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="12" fill="#1DB954" opacity="0.15" />
+                  <path d="M12 7v5l4 2" stroke="#1DB954" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+                <span style={{ fontWeight: 700, fontSize: 18, color: '#1DB954', letterSpacing: 0.5 }}>楽曲分類ガイド</span>
+              </Box>
+              <div style={{ lineHeight: 1.8 }}>
+                このページでは、「<b>歌える自信</b>(1~4)」と「<b>思い入れ</b>(1~4)」を入力します。<br />
+                <span style={{ fontWeight: 700, color: '#1DB954' }}>歌える自信</span>は「その曲を歌うとき、どのくらい不安がないか」です。<br />
+                1: ほとんど自信がない ～ 4: とても自信がある<br />
+                <br />
+                <span style={{ fontWeight: 700, color: '#1DB954' }}>思い入れ</span>は「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
+                1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
+                <br />
+                分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
+              </div>
+            </Box>
           </Box>
 
           {/* --- モバイル向けタブレイアウト --- */}
           <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-            <Tabs
-              value={mobileTab}
-              onChange={handleChangeMobileTab}
-              textColor="inherit"
-              indicatorColor="secondary"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: 'green',
-                },
-              }}
+            <Box
               sx={{
-                backgroundColor: 'rgb(220 252 231 / var(--tw-bg-opacity, 1))', // やや明るめの緑
-                borderRadius: 1,
+                display: 'flex',
+                gap: 2,
+                mb: 2,
+                justifyContent: 'center',
               }}
             >
-              <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
-              <Tab label={`分類完了 (${completedTracks.length}曲)`} />
-            </Tabs>
-
-            {/* --- 未分類タブ --- */}
+              <Button
+                variant={mobileTab === 0 ? 'contained' : 'outlined'}
+                onClick={() => setMobileTab(0)}
+                sx={{
+                  backgroundColor: mobileTab === 0 ? '#1DB954' : undefined,
+                  color: mobileTab === 0 ? '#fff' : '#1DB954',
+                  borderColor: '#1DB954',
+                  fontWeight: 700,
+                  px: 3,
+                  boxShadow: mobileTab === 0 ? 2 : undefined,
+                  '&:hover': {
+                    backgroundColor: '#169e45',
+                    color: '#fff',
+                  },
+                }}
+              >
+                未分類 ({unclassifiedTracks.length}曲)
+              </Button>
+              <Button
+                variant={mobileTab === 1 ? 'contained' : 'outlined'}
+                onClick={() => setMobileTab(1)}
+                sx={{
+                  backgroundColor: mobileTab === 1 ? '#1DB954' : undefined,
+                  color: mobileTab === 1 ? '#fff' : '#1DB954',
+                  borderColor: '#1DB954',
+                  fontWeight: 700,
+                  px: 3,
+                  boxShadow: mobileTab === 1 ? 2 : undefined,
+                  '&:hover': {
+                    backgroundColor: '#169e45',
+                    color: '#fff',
+                  },
+                }}
+              >
+                分類完了 ({completedTracks.length}曲)
+              </Button>
+            </Box>
+            {/* --- 未分類 --- */}
             {mobileTab === 0 && (
               <Box sx={{ mt: 2 }}>
                 {renderUnclassifiedTracks(unclassifiedTracks)}
               </Box>
             )}
-
-            {/* --- 分類完了タブ --- */}
+            {/* --- 分類完了 --- */}
             {mobileTab === 1 && (
               <Box sx={{ mt: 2 }}>
                 <TextField
@@ -668,39 +700,65 @@ export default function TrackClassificationPage() {
                 mx: 'auto',
                 mt: 3,
                 mb: 3,
-                backgroundColor: 'white',
-                borderRadius: 2,
-                boxShadow: 2,
-                p: 3,
+                background: 'rgba(255,255,255,0.95)',
+                borderRadius: 3,
+                boxShadow: 4,
+                p: 4,
+                border: '1px solid #e0e7ff',
               }}
             >
-              <Tabs
-                value={pcTab}
-                onChange={handleChangePcTab}
-                textColor="inherit"
-                indicatorColor="secondary"
-                TabIndicatorProps={{
-                  style: {
-                    backgroundColor: 'green',
-                  },
-                }}
+              <Box
                 sx={{
-                  backgroundColor: '#dcfce7', // PC用にもやや淡い緑背景
-                  borderRadius: 1,
+                  display: 'flex',
+                  gap: 2,
+                  mb: 3,
+                  justifyContent: 'center',
                 }}
               >
-                <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
-                <Tab label={`分類完了 (${completedTracks.length}曲)`} />
-              </Tabs>
-
-              {/* --- PC: 未分類タブ --- */}
+                <Button
+                  variant={pcTab === 0 ? 'contained' : 'outlined'}
+                  onClick={() => setPcTab(0)}
+                  sx={{
+                    backgroundColor: pcTab === 0 ? '#1DB954' : undefined,
+                    color: pcTab === 0 ? '#fff' : '#1DB954',
+                    borderColor: '#1DB954',
+                    fontWeight: 700,
+                    px: 4,
+                    boxShadow: pcTab === 0 ? 2 : undefined,
+                    '&:hover': {
+                      backgroundColor: '#169e45',
+                      color: '#fff',
+                    },
+                  }}
+                >
+                  未分類 ({unclassifiedTracks.length}曲)
+                </Button>
+                <Button
+                  variant={pcTab === 1 ? 'contained' : 'outlined'}
+                  onClick={() => setPcTab(1)}
+                  sx={{
+                    backgroundColor: pcTab === 1 ? '#1DB954' : undefined,
+                    color: pcTab === 1 ? '#fff' : '#1DB954',
+                    borderColor: '#1DB954',
+                    fontWeight: 700,
+                    px: 4,
+                    boxShadow: pcTab === 1 ? 2 : undefined,
+                    '&:hover': {
+                      backgroundColor: '#169e45',
+                      color: '#fff',
+                    },
+                  }}
+                >
+                  分類完了 ({completedTracks.length}曲)
+                </Button>
+              </Box>
+              {/* --- PC: 未分類 --- */}
               {pcTab === 0 && (
                 <Box sx={{ mt: 3 }}>
                   {renderUnclassifiedTracks(unclassifiedTracks)}
                 </Box>
               )}
-
-              {/* --- PC: 分類完了タブ --- */}
+              {/* --- PC: 分類完了 --- */}
               {pcTab === 1 && (
                 <Box sx={{ mt: 3 }}>
                   <Box sx={{ maxWidth: 400, mb: 2 }}>
