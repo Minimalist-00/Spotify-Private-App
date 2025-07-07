@@ -10,6 +10,9 @@ import { useEffect, useState } from 'react';
 import PageTimer from '@/components/pageTimer';
 import usePageTimer from '@/hooks/usePageTimer';
 
+// 設定値
+const DIALOGUE_BUTTON_DELAY_SECONDS = 30;
+
 /* ================ Spotifyの型定義 ================ */
 interface SpotifyArtist {
   name: string;
@@ -42,7 +45,7 @@ export default function PlayerPage() {
   const [trackArtists, setTrackArtists] = useState<string>('');
   const [albumImage, setAlbumImage] = useState<string>('');
 
-  // 30秒経過後にボタンを表示するためのフラグ
+  // xx秒経過後にボタンを表示するためのフラグ
   const [showDialogueButton, setShowDialogueButton] = useState<boolean>(false);
 
   // ページ滞在時間（秒）
@@ -116,9 +119,9 @@ export default function PlayerPage() {
     });
   };
 
-  // ページに滞在して30秒以上経過したらボタンを表示
+  // ページに滞在してxx秒以上経過したらボタンを表示
   useEffect(() => {
-    if (elapsedTime >= 30 && !showDialogueButton) {
+    if (elapsedTime >= DIALOGUE_BUTTON_DELAY_SECONDS && !showDialogueButton) {
       setShowDialogueButton(true);
     }
   }, [elapsedTime, showDialogueButton]);
@@ -163,7 +166,7 @@ export default function PlayerPage() {
         <p className="text-md text-gray-600">{trackArtists}</p>
       </div>
 
-      {/* 30秒以上滞在で表示するボタン */}
+      {/* xx秒以上滞在で表示するボタン */}
       {showDialogueButton && (
         <button
           onClick={handleGotoDialogue}
