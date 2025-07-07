@@ -1,8 +1,8 @@
 // src/pages/ipad/sessionA/index.tsx
 
-import React, { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 type UserData = {
   id: string;  // usersテーブルのPK
@@ -93,7 +93,7 @@ export default function NewSessionPage() {
     <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-100 p-8">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
         <h1 className="text-3xl font-bold mb-6 text-center">セッションを開始する</h1>
-  
+
         {/* ユーザーA(自分) */}
         <div className="mb-6">
           <label className="block mb-2 text-lg">先に楽曲を選択するユーザー</label>
@@ -110,7 +110,7 @@ export default function NewSessionPage() {
             ))}
           </select>
         </div>
-  
+
         {/* ユーザーB(相手) */}
         <div className="mb-6">
           <label className="block mb-2 text-lg">後に楽曲を選択するユーザー</label>
@@ -127,7 +127,7 @@ export default function NewSessionPage() {
             ))}
           </select>
         </div>
-  
+
         <div className="flex justify-center">
           <button
             onClick={handleCreateSession}

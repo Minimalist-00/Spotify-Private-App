@@ -1,8 +1,7 @@
 // src/pages/ipad/phaseB/index.tsx
 
-import PageTimer from '@/components/pageTimer';
+import TrackSelection from '@/components/TrackSelection';
 import { supabase } from '@/utils/supabaseClient';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -134,7 +133,7 @@ export default function PhasesPage() {
           .filter((track) => fallback.includes(track.self_disclosure_level))
           .filter((track) => !alreadySelectedTrackIds.includes(track.spotify_track_id));
 
-          console.log([...filteredTracks, ...fallbackTracks].sort(() => 0.5 - Math.random()).slice(0, 4));
+        console.log([...filteredTracks, ...fallbackTracks].sort(() => 0.5 - Math.random()).slice(0, 4));
         return [...filteredTracks, ...fallbackTracks].sort(() => 0.5 - Math.random()).slice(0, 4);
       }
 
@@ -306,137 +305,30 @@ export default function PhasesPage() {
   if (directionNum === 1) {
     // ユーザーAが選ぶ画面
     return (
-      <div className="flex flex-col w-screen h-[100dvh] bg-gray-100">
-        <div className="flex-grow overflow-auto p-6 pb-24">
-          <h1 className="text-3xl font-bold mb-4 text-center">
-            {phaseNumbersNum} フェーズ目です
-          </h1>
-          <div className="absolute top-4 left-4 px-4 py-2">
-            <PageTimer />
-          </div>
-          <p className="mb-6 text-center text-lg">
-            以下の楽曲から1つ選んでください。
-          </p>
-
-          {userATracks.length === 0 ? (
-            <p className="text-center text-xl">楽曲がありません。</p>
-          ) : (
-            // 2×2の形で表示（最大4曲）
-            <div className="grid grid-cols-2 gap-4">
-              {userATracks.map((track) => (
-                <div
-                  key={track.spotify_track_id}
-                  className={`relative flex flex-col items-start border rounded-lg p-4 shadow cursor-pointer
-                    ${selectedTrack === track.spotify_track_id
-                      ? 'border-green-500'
-                      : 'border-gray-300'
-                    }
-                  `}
-                  onClick={() => setSelectedTrack(track.spotify_track_id)}
-                >
-                  {track.image_url && (
-                    <Image
-                      src={track.image_url}
-                      alt={track.name}
-                      width={100}
-                      height={100}
-                      className="object-cover rounded-sm"
-                    />
-                  )}
-                  <div className="mt-2">
-                    <h2 className="font-semibold text-lg">{track.name}</h2>
-                    <p className="text-sm text-gray-600">{track.album_name}</p>
-                    <p className="text-sm text-gray-500">{track.artist_name}</p>
-                  </div>
-                  {selectedTrack === track.spotify_track_id && (
-                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
-                      選択中
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gray-100">
-          <button
-            onClick={handleSelectUserATracks}
-            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
-            disabled={!selectedTrack}
-          >
-            曲を決定する
-          </button>
-        </div>
-      </div>
+      <TrackSelection
+        tracks={userATracks}
+        selectedTrack={selectedTrack}
+        onTrackSelect={setSelectedTrack}
+        onConfirm={handleSelectUserATracks}
+        phaseNumber={phaseNumbersNum}
+        showSearch={false}
+        layout="list"
+      />
     );
   }
 
   if (directionNum === 2) {
     // ユーザーBが選ぶ画面
     return (
-      <div className="flex flex-col w-screen h-[100dvh] bg-gray-100">
-        <div className="flex-grow overflow-auto p-6 pb-24">
-          <h1 className="text-3xl font-bold mb-4 text-center">
-            {phaseNumbersNum} フェーズ目です
-          </h1>
-          <div className="absolute top-4 left-4 px-4 py-2">
-            <PageTimer />
-          </div>
-          <p className="mb-6 text-center text-lg">
-            以下の楽曲から1つ選んでください。
-          </p>
-
-          {userBTracks.length === 0 ? (
-            <p className="text-center text-xl">楽曲がありません。</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {userBTracks.map((track) => (
-                <div
-                  key={track.spotify_track_id}
-                  className={`relative flex flex-col items-start border rounded-lg p-4 shadow cursor-pointer
-                    ${selectedTrack === track.spotify_track_id
-                      ? 'border-green-500'
-                      : 'border-gray-300'
-                    }
-                  `}
-                  onClick={() => setSelectedTrack(track.spotify_track_id)}
-                >
-                  {track.image_url && (
-                    <Image
-                      src={track.image_url}
-                      alt={track.name}
-                      width={100}
-                      height={100}
-                      className="object-cover rounded-md"
-                    />
-                  )}
-                  <div className="mt-2">
-                    <h2 className="font-semibold text-lg">{track.name}</h2>
-                    <p className="text-sm text-gray-600">{track.album_name}</p>
-                    <p className="text-sm text-gray-500">{track.artist_name}</p>
-                  </div>
-                  {selectedTrack === track.spotify_track_id && (
-                    <span className="absolute top-2 right-2 text-green-500 font-semibold text-sm">
-                      選択中
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gray-100">
-          <button
-            onClick={handleSelectUserBTracks}
-            className="w-full py-4 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700"
-            disabled={!selectedTrack}
-          >
-            曲を決定する
-          </button>
-        </div>
-      </div>
+      <TrackSelection
+        tracks={userBTracks}
+        selectedTrack={selectedTrack}
+        onTrackSelect={setSelectedTrack}
+        onConfirm={handleSelectUserBTracks}
+        phaseNumber={phaseNumbersNum}
+        showSearch={false}
+        layout="list"
+      />
     );
   }
 
