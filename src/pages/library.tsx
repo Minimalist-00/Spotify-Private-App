@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 
 // MUI
 import {
-  // Checkbox,
   Alert,
   AppBar,
   Box,
@@ -24,9 +23,6 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
-
-// import CloseIcon from '@mui/icons-material/Close';
-// import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 
 type TrackData = {
   spotify_track_id: string;
@@ -104,7 +100,7 @@ export default function TrackClassificationPage() {
   //     const base =
   //       newMap.get(trackId) || tracks.find((t) => t.spotify_track_id === trackId);
   //     if (!base) return newMap;
-
+  //
   //     const newVal = checked ? 0 : null; // 0 => 歌えない, null => 未選択
   //     newMap.set(trackId, { ...base, can_singing: newVal });
   //     return newMap;
@@ -325,7 +321,7 @@ export default function TrackClassificationPage() {
             </Box>
           </Box>
 
-          {/* コンパクトなレイアウト: 歌えない, 歌いやすさ, 思い入れ */}
+          {/* コンパクトなレイアウト: 歌いやすさ, 思い入れ */}
           <Box
             mt={1}
             display="flex"
@@ -334,22 +330,6 @@ export default function TrackClassificationPage() {
             alignItems="flex-start"
             sx={{ flexWrap: 'wrap' }}
           >
-            {/* <Box display="flex" flexDirection="row" alignItems="center">
-              <FormControlLabel
-                label="歌えない"
-                labelPlacement="end"
-                control={
-                  <Checkbox
-                    icon={<CheckBoxOutlineBlankIcon />}
-                    checkedIcon={<CloseIcon />}
-                    checked={canSinging === 0}
-                    onChange={(e) =>
-                      handleCannotSingCheck(track.spotify_track_id, e.target.checked)
-                    }
-                  />
-                }
-              />
-            </Box> */}
             {/* 歌いやすさ (1~4) */}
             <Box display="flex" flexDirection="row" alignItems="center">
               <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 1 }}>歌える自信</FormLabel>
@@ -498,27 +478,6 @@ export default function TrackClassificationPage() {
               alignItems="flex-start"
               sx={{ flexWrap: 'wrap' }}
             >
-              {/* 歌えない
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                sx={{ mr: 2, mb: 1 }}
-              >
-                <FormControlLabel
-                  label="歌えない"
-                  labelPlacement="end"
-                  control={
-                    <Checkbox
-                      icon={<CheckBoxOutlineBlankIcon />}
-                      checkedIcon={<CloseIcon />}
-                      checked={tempCanSinging === 0}
-                      onChange={(e) => setTempCanSinging(e.target.checked ? 0 : null)}
-                    />
-                  }
-                />
-              </Box> */}
-
               {/* 歌いやすさ (1~4) */}
               <Box
                 display="flex"

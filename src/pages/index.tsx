@@ -19,7 +19,7 @@ export default function Home() {
     <div className="relative flex flex-col min-h-screen text-gray-800">
       {/* ヘッダー */}
       <header className="flex items-center justify-between p-4 bg-green-600 text-white shadow-md">
-        <h1 className="text-xl font-bold">Spotify Study App</h1>
+        <h1 className="text-xl font-bold">カラオケ実験 事前準備アプリ</h1>
         {session && (
           <div className="flex items-center space-x-4">
             {session.user?.image && (
@@ -37,7 +37,7 @@ export default function Home() {
             )}
             <button
               onClick={handleLogout}
-              className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-sm"
+              className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-sm font-bold"
             >
               ログアウト
             </button>
@@ -78,7 +78,7 @@ export default function Home() {
             </p>
             {/* ライブラリへのリンク */}
             <Link href="/library" className="block w-full bg-white border border-green-300 hover:bg-green-100 text-green-800 text-lg font-semibold text-center rounded-lg shadow p-4 transition-colors">
-              ライブラリへ
+              分類をはじめる
             </Link>
           </div>
         )}
