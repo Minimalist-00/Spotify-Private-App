@@ -591,22 +591,29 @@ export default function TrackClassificationPage() {
 
         <Container sx={{ flex: 1, py: 2 }}>
           {/* 説明エリア */}
-          <Alert
-            severity="info"
+          <Box
             sx={{
+              maxWidth: 800,
+              mx: 'auto',
               mb: 3,
-              backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
             }}
           >
-            このページでは、「歌える自信(1~4)」と「思い入れの強さ(1~4)」を入力します。<br />
-            歌える自信は「その曲を自分がどのくらい歌いこなせるか」です。<br />
-            1: ほとんど自信がない ～ 4: とても自信がある<br />
-            <br />
-            思い入れの強さは「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
-            1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
-            <br />
-            分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
-          </Alert>
+            <Alert
+              severity="info"
+              sx={{
+                backgroundColor: 'rgb(240 253 244 / var(--tw-bg-opacity, 1))',
+              }}
+            >
+              このページでは、「歌える自信(1~4)」と「思い入れの強さ(1~4)」を入力します。<br />
+              歌える自信は「その曲を歌うとき、どのくらい不安がないか」です。<br />
+              1: ほとんど自信がない ～ 4: とても自信がある<br />
+              <br />
+              思い入れは「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
+              1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
+              <br />
+              分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
+            </Alert>
+          </Box>
 
           {/* --- モバイル向けタブレイアウト --- */}
           <Box sx={{ display: { xs: 'block', md: 'none' } }}>
@@ -655,48 +662,61 @@ export default function TrackClassificationPage() {
 
           {/* --- PC向けタブレイアウト --- */}
           <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-            <Tabs
-              value={pcTab}
-              onChange={handleChangePcTab}
-              textColor="inherit"
-              indicatorColor="secondary"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: 'green',
-                },
-              }}
+            <Box
               sx={{
-                backgroundColor: '#dcfce7', // PC用にもやや淡い緑背景
-                borderRadius: 1,
+                maxWidth: 800,
+                mx: 'auto',
+                mt: 3,
+                mb: 3,
+                backgroundColor: 'white',
+                borderRadius: 2,
+                boxShadow: 2,
+                p: 3,
               }}
             >
-              <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
-              <Tab label={`分類完了 (${completedTracks.length}曲)`} />
-            </Tabs>
+              <Tabs
+                value={pcTab}
+                onChange={handleChangePcTab}
+                textColor="inherit"
+                indicatorColor="secondary"
+                TabIndicatorProps={{
+                  style: {
+                    backgroundColor: 'green',
+                  },
+                }}
+                sx={{
+                  backgroundColor: '#dcfce7', // PC用にもやや淡い緑背景
+                  borderRadius: 1,
+                }}
+              >
+                <Tab label={`未分類 (${unclassifiedTracks.length}曲)`} />
+                <Tab label={`分類完了 (${completedTracks.length}曲)`} />
+              </Tabs>
 
-            {/* --- PC: 未分類タブ --- */}
-            {pcTab === 0 && (
-              <Box sx={{ mt: 3 }}>
-                {renderUnclassifiedTracks(unclassifiedTracks)}
-              </Box>
-            )}
-
-            {/* --- PC: 分類完了タブ --- */}
-            {pcTab === 1 && (
-              <Box sx={{ mt: 3 }}>
-                <Box sx={{ maxWidth: 400, mb: 2 }}>
-                  <TextField
-                    label="曲名で検索"
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
-                  />
+              {/* --- PC: 未分類タブ --- */}
+              {pcTab === 0 && (
+                <Box sx={{ mt: 3 }}>
+                  {renderUnclassifiedTracks(unclassifiedTracks)}
                 </Box>
-                {renderCompletedTracks(filteredCompletedTracks)}
-              </Box>
-            )}
+              )}
+
+              {/* --- PC: 分類完了タブ --- */}
+              {pcTab === 1 && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ maxWidth: 400, mb: 2 }}>
+                    <TextField
+                      label="曲名で検索"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                    />
+                  </Box>
+                  {renderCompletedTracks(filteredCompletedTracks)}
+                </Box>
+              )}
+            </Box>
           </Box>
         </Container>
 
