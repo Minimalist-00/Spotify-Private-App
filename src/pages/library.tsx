@@ -51,6 +51,9 @@ export default function TrackClassificationPage() {
   // PC用のタブ切り替え
   const [pcTab, setPcTab] = useState(0);
 
+  // 再分類ヒント表示用のステート
+  const [showReclassifyHint, setShowReclassifyHint] = useState(false);
+
   // DBからユーザーの楽曲一覧を取得
   useEffect(() => {
     if (!userId) return;
@@ -400,17 +403,23 @@ export default function TrackClassificationPage() {
         return (
           <Paper
             key={track.spotify_track_id}
-            sx={{ p: 2, mb: 2, cursor: 'pointer' }}
+            sx={{
+              p: 2,
+              mb: 2,
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s',
+              '&:hover': { boxShadow: 6, background: '#f6fff8' }
+            }}
             onClick={() => startReclassify(track)}
           >
-            <Box display="flex" gap={2}>
+            <Box display="flex" gap={2} alignItems="center" mb={1}>
               {track.image_url && (
                 <Image
                   src={track.image_url}
                   alt={track.name || 'No Album'}
-                  width={64}
-                  height={64}
-                  style={{ objectFit: 'cover' }}
+                  width={48}
+                  height={48}
+                  style={{ objectFit: 'cover', borderRadius: 6 }}
                 />
               )}
               <Box>
@@ -420,31 +429,47 @@ export default function TrackClassificationPage() {
                 <Typography variant="body2" color="text.secondary">
                   {track.artist_name}
                 </Typography>
+                <Box
+                  display="flex"
+                  flexDirection="row"
+                  gap={3}
+                  mt={1}
+                  alignItems="center"
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography fontWeight={700} color="#2563eb" fontSize={15}>
+                      歌える自信
+                    </Typography>
+                    <Typography fontSize={15}>
+                      {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography fontWeight={700} color="#2563eb" fontSize={15}>
+                      思い入れ
+                    </Typography>
+                    <Typography fontSize={15}>
+                      {track.song_favorite_level}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </Box>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              歌える自信:{' '}
-              {track.can_singing === 0 ? '歌えない(×)' : track.can_singing}
-              <br />
-              思い入れ: {track.song_favorite_level}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              (クリックで再分類)
-            </Typography>
           </Paper>
         );
       } else {
         // 編集UI
         return (
           <Paper key={track.spotify_track_id} sx={{ p: 2, mb: 2 }}>
-            <Box display="flex" gap={2}>
+            {/* アルバムカバー＋タイトル・アーティスト */}
+            <Box display="flex" gap={2} alignItems="center" mb={1}>
               {track.image_url && (
                 <Image
                   src={track.image_url}
                   alt={track.name || 'No Album'}
-                  width={64}
-                  height={64}
-                  style={{ objectFit: 'cover' }}
+                  width={48}
+                  height={48}
+                  style={{ objectFit: 'cover', borderRadius: 6 }}
                 />
               )}
               <Box>
@@ -456,92 +481,112 @@ export default function TrackClassificationPage() {
                 </Typography>
               </Box>
             </Box>
-
-            {/* 再分類UIのコンパクト化 */}
+            {/* 歌える自信 */}
             <Box
-              mt={2}
               display="flex"
               flexDirection="row"
-              justifyContent="space-between"
-              alignItems="flex-start"
-              sx={{ flexWrap: 'wrap' }}
+              alignItems="center"
+              gap={2}
+              mt={1}
+              mb={1}
             >
-              {/* 歌いやすさ (1~4) */}
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                sx={{ mr: 2, mb: 1 }}
-              >
-                <FormLabel sx={{ minWidth: '5rem', fontSize: 14, mr: 1.05 }}>
-                  歌える自信
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={
-                    tempCanSinging == null || tempCanSinging === 0
-                      ? ''
-                      : String(tempCanSinging)
+              <FormLabel sx={{ fontSize: 15, color: '#2563eb', fontWeight: 700, minWidth: 80 }}>
+                歌える自信
+              </FormLabel>
+              <RadioGroup
+                row
+                value={
+                  tempCanSinging == null || tempCanSinging === 0
+                    ? ''
+                    : String(tempCanSinging)
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setTempCanSinging(null);
+                  } else {
+                    setTempCanSinging(Number(val));
                   }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      setTempCanSinging(null);
-                    } else {
-                      setTempCanSinging(Number(val));
-                    }
-                  }}
-                >
-                  {[1, 2, 3, 4].map((num) => (
-                    <FormControlLabel
-                      key={num}
-                      value={String(num)}
-                      control={<Radio size="small" />}
-                      label={String(num)}
-                    />
-                  ))}
-                </RadioGroup>
-              </Box>
-
-              {/* 思い入れ (1~4) */}
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                sx={{ mb: 1 }}
+                }}
+                sx={{ ml: 1 }}
               >
-                <FormLabel sx={{ minWidth: '4rem', fontSize: 14, mr: 3 }}>
-                  思い入れ
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={tempFavoriteLevel == null ? '' : String(tempFavoriteLevel)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      setTempFavoriteLevel(null);
-                    } else {
-                      setTempFavoriteLevel(Number(val));
-                    }
-                  }}
-                >
-                  {[1, 2, 3, 4].map((num) => (
-                    <FormControlLabel
-                      key={num}
-                      value={String(num)}
-                      control={<Radio size="small" />}
-                      label={String(num)}
-                    />
-                  ))}
-                </RadioGroup>
-              </Box>
+                {[1, 2, 3, 4].map((num) => (
+                  <FormControlLabel
+                    key={num}
+                    value={String(num)}
+                    control={<Radio size="small" />}
+                    label={String(num)}
+                    sx={{
+                      mx: 0.5,
+                      '& .MuiFormControlLabel-label': { fontSize: 14 }
+                    }}
+                  />
+                ))}
+              </RadioGroup>
             </Box>
-
+            {/* 思い入れ */}
+            <Box
+              display="flex"
+              flexDirection="row"
+              alignItems="center"
+              gap={2}
+              mt={1}
+              mb={1}
+            >
+              <FormLabel sx={{ fontSize: 15, color: '#2563eb', fontWeight: 700, minWidth: 80 }}>
+                思い入れ
+              </FormLabel>
+              <RadioGroup
+                row
+                value={tempFavoriteLevel == null ? '' : String(tempFavoriteLevel)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setTempFavoriteLevel(null);
+                  } else {
+                    setTempFavoriteLevel(Number(val));
+                  }
+                }}
+                sx={{ ml: 1 }}
+              >
+                {[1, 2, 3, 4].map((num) => (
+                  <FormControlLabel
+                    key={num}
+                    value={String(num)}
+                    control={<Radio size="small" />}
+                    label={String(num)}
+                    sx={{
+                      mx: 0.5,
+                      '& .MuiFormControlLabel-label': { fontSize: 14 }
+                    }}
+                  />
+                ))}
+              </RadioGroup>
+            </Box>
+            {/* ボタン */}
             <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
-              <Button variant="outlined" onClick={cancelReclassify}>
+              <Button
+                variant="outlined"
+                onClick={cancelReclassify}
+                sx={{
+                  color: '#2563eb',
+                  borderColor: '#2563eb',
+                  '&:hover': {
+                    borderColor: '#1d4ed8',
+                    backgroundColor: 'rgba(37,99,235,0.08)',
+                  },
+                }}
+              >
                 キャンセル
               </Button>
-              <Button variant="contained" onClick={saveReclassify}>
+              <Button
+                variant="contained"
+                onClick={saveReclassify}
+                sx={{
+                  backgroundColor: '#2563eb',
+                  ':hover': { backgroundColor: '#1d4ed8' },
+                }}
+              >
                 保存
               </Button>
             </Box>
@@ -566,12 +611,34 @@ export default function TrackClassificationPage() {
         {/* ヘッダー => Spotifyっぽい緑 */}
         <AppBar
           position="static"
+          elevation={0}
           sx={{
-            backgroundColor: '#1DB954', // Spotifyのイメージカラー
+            background: 'transparent',
+            boxShadow: 'none',
+            borderBottom: 'none',
+            py: 0,
           }}
         >
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Toolbar
+            sx={{
+              justifyContent: 'center',
+              minHeight: 40,
+              px: 0,
+              paddingTop: 2,
+            }}
+          >
+            <Typography
+              variant="h5"
+              component="div"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: 1,
+                color: '#2563eb',
+                textAlign: 'center',
+                fontSize: { xs: 22, md: 28 },
+                flexGrow: 1,
+              }}
+            >
               楽曲の分類
             </Typography>
           </Toolbar>
@@ -603,18 +670,18 @@ export default function TrackClassificationPage() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="#1DB954" style={{ flexShrink: 0 }}>
-                  <circle cx="12" cy="12" r="12" fill="#1DB954" opacity="0.15" />
-                  <path d="M12 7v5l4 2" stroke="#1DB954" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#2563eb" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="12" fill="#2563eb" opacity="0.15" />
+                  <path d="M12 7v5l4 2" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
-                <span style={{ fontWeight: 700, fontSize: 18, color: '#1DB954', letterSpacing: 0.5 }}>楽曲分類ガイド</span>
+                <span style={{ fontWeight: 700, fontSize: 18, color: '#2563eb', letterSpacing: 0.5 }}>楽曲分類ガイド</span>
               </Box>
               <div style={{ lineHeight: 1.8 }}>
                 このページでは、「<b>歌える自信</b>(1~4)」と「<b>思い入れ</b>(1~4)」を入力します。<br />
-                <span style={{ fontWeight: 700, color: '#1DB954' }}>歌える自信</span>は「その曲を歌うとき、どのくらい不安がないか」です。<br />
+                <span style={{ fontWeight: 700, color: '#2563eb' }}>歌える自信</span>は「その曲を歌うとき、どのくらい不安がないか」です。<br />
                 1: ほとんど自信がない ～ 4: とても自信がある<br />
                 <br />
-                <span style={{ fontWeight: 700, color: '#1DB954' }}>思い入れ</span>は「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
+                <span style={{ fontWeight: 700, color: '#2563eb' }}>思い入れ</span>は「その曲に対する愛着の強さや，過去の経験がどのくらい含まれているか」です。<br />
                 1: ほとんど思い入れがない ～ 4: とても思い入れがある<br />
                 <br />
                 分類をしたら、画面下部の「保存」ボタンを押してください。途中で中断しても大丈夫です。
@@ -636,14 +703,14 @@ export default function TrackClassificationPage() {
                 variant={mobileTab === 0 ? 'contained' : 'outlined'}
                 onClick={() => setMobileTab(0)}
                 sx={{
-                  backgroundColor: mobileTab === 0 ? '#1DB954' : undefined,
-                  color: mobileTab === 0 ? '#fff' : '#1DB954',
-                  borderColor: '#1DB954',
+                  backgroundColor: mobileTab === 0 ? '#2563eb' : undefined,
+                  color: mobileTab === 0 ? '#fff' : '#2563eb',
+                  borderColor: '#2563eb',
                   fontWeight: 700,
                   px: 3,
                   boxShadow: mobileTab === 0 ? 2 : undefined,
                   '&:hover': {
-                    backgroundColor: '#169e45',
+                    backgroundColor: '#1d4ed8',
                     color: '#fff',
                   },
                 }}
@@ -652,16 +719,19 @@ export default function TrackClassificationPage() {
               </Button>
               <Button
                 variant={mobileTab === 1 ? 'contained' : 'outlined'}
-                onClick={() => setMobileTab(1)}
+                onClick={() => {
+                  setMobileTab(1);
+                  setShowReclassifyHint(true);
+                }}
                 sx={{
-                  backgroundColor: mobileTab === 1 ? '#1DB954' : undefined,
-                  color: mobileTab === 1 ? '#fff' : '#1DB954',
-                  borderColor: '#1DB954',
+                  backgroundColor: mobileTab === 1 ? '#2563eb' : undefined,
+                  color: mobileTab === 1 ? '#fff' : '#2563eb',
+                  borderColor: '#2563eb',
                   fontWeight: 700,
                   px: 3,
                   boxShadow: mobileTab === 1 ? 2 : undefined,
                   '&:hover': {
-                    backgroundColor: '#169e45',
+                    backgroundColor: '#1d4ed8',
                     color: '#fff',
                   },
                 }}
@@ -688,6 +758,13 @@ export default function TrackClassificationPage() {
                   sx={{ mb: 2 }}
                 />
                 {renderCompletedTracks(filteredCompletedTracks)}
+                {showReclassifyHint && (
+                  <Box mt={2} textAlign="center">
+                    <Typography variant="body2" color="text.secondary">
+                      楽曲カードをクリックすると再分類できます
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             )}
           </Box>
@@ -719,14 +796,14 @@ export default function TrackClassificationPage() {
                   variant={pcTab === 0 ? 'contained' : 'outlined'}
                   onClick={() => setPcTab(0)}
                   sx={{
-                    backgroundColor: pcTab === 0 ? '#1DB954' : undefined,
-                    color: pcTab === 0 ? '#fff' : '#1DB954',
-                    borderColor: '#1DB954',
+                    backgroundColor: pcTab === 0 ? '#2563eb' : undefined,
+                    color: pcTab === 0 ? '#fff' : '#2563eb',
+                    borderColor: '#2563eb',
                     fontWeight: 700,
                     px: 4,
                     boxShadow: pcTab === 0 ? 2 : undefined,
                     '&:hover': {
-                      backgroundColor: '#169e45',
+                      backgroundColor: '#1d4ed8',
                       color: '#fff',
                     },
                   }}
@@ -735,16 +812,19 @@ export default function TrackClassificationPage() {
                 </Button>
                 <Button
                   variant={pcTab === 1 ? 'contained' : 'outlined'}
-                  onClick={() => setPcTab(1)}
+                  onClick={() => {
+                    setPcTab(1);
+                    setShowReclassifyHint(true);
+                  }}
                   sx={{
-                    backgroundColor: pcTab === 1 ? '#1DB954' : undefined,
-                    color: pcTab === 1 ? '#fff' : '#1DB954',
-                    borderColor: '#1DB954',
+                    backgroundColor: pcTab === 1 ? '#2563eb' : undefined,
+                    color: pcTab === 1 ? '#fff' : '#2563eb',
+                    borderColor: '#2563eb',
                     fontWeight: 700,
                     px: 4,
                     boxShadow: pcTab === 1 ? 2 : undefined,
                     '&:hover': {
-                      backgroundColor: '#169e45',
+                      backgroundColor: '#1d4ed8',
                       color: '#fff',
                     },
                   }}
@@ -772,6 +852,13 @@ export default function TrackClassificationPage() {
                     />
                   </Box>
                   {renderCompletedTracks(filteredCompletedTracks)}
+                  {showReclassifyHint && (
+                    <Box mt={2} textAlign="center">
+                      <Typography variant="body2" color="text.secondary">
+                        楽曲カードをクリックすると再分類できます
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               )}
             </Box>
@@ -796,8 +883,8 @@ export default function TrackClassificationPage() {
               variant="contained"
               onClick={handleSave}
               sx={{
-                backgroundColor: '#1DB954',
-                ':hover': { backgroundColor: '#169e45' },
+                backgroundColor: '#2563eb',
+                ':hover': { backgroundColor: '#1d4ed8' },
               }}
             >
               保存
@@ -815,7 +902,13 @@ export default function TrackClassificationPage() {
           <Alert
             onClose={handleCloseSnackbar}
             severity="success"
-            sx={{ width: '100%' }}
+            sx={{
+              width: '100%',
+              backgroundColor: '#2563eb',
+              color: '#fff',
+              fontWeight: 700,
+              letterSpacing: 1,
+            }}
             elevation={6}
             variant="filled"
           >
