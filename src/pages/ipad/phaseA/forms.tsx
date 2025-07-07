@@ -38,7 +38,7 @@ export default function FormsPage() {
           {showButton && (
             <button
               onClick={handleNextPhase}
-              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+              className="px-6 py-3 bg-blue-600 text-white text-xl rounded hover:bg-blue-700"
             >
               先攻のユーザーの曲選択画面に移動する
             </button>

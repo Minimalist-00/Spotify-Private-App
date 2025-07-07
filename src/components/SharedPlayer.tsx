@@ -9,7 +9,7 @@ import PageTimer from '@/components/pageTimer';
 import useShowButtonAfterDelay from '@/hooks/useShowButtonAfterDelay';
 
 // 設定値
-const DIALOGUE_BUTTON_DELAY_SECONDS = 60;
+const DIALOGUE_BUTTON_DELAY_SECONDS = 10;
 
 /* ================ Spotifyの型定義 ================ */
 interface SpotifyArtist {

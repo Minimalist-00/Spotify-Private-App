@@ -31,7 +31,7 @@ const ConfirmTrackDialog: React.FC<ConfirmTrackDialogProps> = ({ open, onClose, 
         </div>
         <div className="flex flex-col gap-3 mt-4">
           <button
-            className="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-bold text-lg"
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-lg"
             onClick={onConfirm}
           >
             はい
