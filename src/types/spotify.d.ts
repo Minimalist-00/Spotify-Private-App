@@ -73,39 +73,3 @@ interface FetchPlaylistsResponse {
 interface FetchTracksResponse {
   tracks: PlaylistTrack[];
 }
-
-// 再生履歴のデータ型定義
-interface RecentlyPlayedTrack {
-  id: string;
-  name: string;
-  artists: string;
-  album: {
-    name: string;
-    image: string;
-  };
-  playedAt: string;
-  track: {
-    id: string;
-    name: string;
-    artists: { name: string }[];
-    album: { name: string; images: { url: string }[] };
-  };
-  played_at: string;
-}
-
-interface SpotifyRecentlyPlayedResponse {
-  items: RecentlyPlayedTrack[];
-}
-
-// トップトラックのデータ型定義
-interface TopTrack {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string }[] };
-  popularity: number;
-}
-
-interface SpotifyTopTracksResponse {
-  items: Array< { TopTrack } >;
-}
