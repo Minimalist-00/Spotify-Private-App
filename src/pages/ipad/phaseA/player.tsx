@@ -6,7 +6,7 @@ export default function PlayerPage() {
   return (
     <SharedPlayer
       phaseType="A"
-      title="デンモクで選曲し、1番を歌ってください"
+      title="デンモクで予約し、1番を歌ってください"
     />
   );
 }

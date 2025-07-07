@@ -1,5 +1,6 @@
 // src/pages/ipad/phaseA/index.tsx
 
+import ConfirmTrackDialog from '@/components/ConfirmTrackDialog';
 import TrackSelection from '@/components/TrackSelection';
 import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/router';
@@ -28,6 +29,9 @@ export default function PhasesPage() {
   const [userATracks, setUserATracks] = useState<TrackData[]>([]);
   const [userBTracks, setUserBTracks] = useState<TrackData[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmingUser, setConfirmingUser] = useState<'A' | 'B' | null>(null);
+  const [selectedTrackInfo, setSelectedTrackInfo] = useState<TrackData | null>(null);
 
   useEffect(() => {
     if (!session_id) return;
@@ -90,80 +94,52 @@ export default function PhasesPage() {
     fetchUserBTracks();
   }, [userA, userB]);
 
-  const handleSelectUserATracks = async () => {
-    if (!phase_id || !selectedTrack) {
-      alert('曲が選択されていません');
-      return;
-    }
-
-    const { data: userAData, error: userAError } = await supabase
-      .from('users')
-      .select('spotify_user_id')
-      .eq('spotify_user_id', userA)
-      .single();
-
-    if (userAError || !userAData) {
-      alert('userAのspotify_user_id 取得失敗');
-      return;
-    }
-    const userASpotifyId = userAData.spotify_user_id;
-
-    const { error: upError } = await supabase
-      .from('phases')
-      .update({
-        select_tracks: selectedTrack,
-        select_tracks_user_id: userASpotifyId,
-      })
-      .eq('id', phase_id);
-
-    if (upError) {
-      console.error('phases update error:', upError);
-      alert('曲の決定に失敗しました');
-      return;
-    }
-    alert('曲を決定しました');
-    router.push({
-      pathname: '/ipad/phaseA/player',
-      query: {
-        session_id,
-        phase_id,
-        phase_numbers,
-        directions,
-      },
-    });
+  const handleOpenConfirmDialog = (userType: 'A' | 'B') => {
+    // 選択された曲の詳細情報を取得
+    const trackList = userType === 'A' ? userATracks : userBTracks;
+    const track = trackList.find((t) => t.spotify_track_id === selectedTrack) || null;
+    setSelectedTrackInfo(track);
+    setConfirmingUser(userType);
+    setShowConfirmDialog(true);
   };
 
-  const handleSelectUserBTracks = async () => {
-    if (!phase_id || !selectedTrack) {
+  const handleCloseConfirmDialog = () => {
+    setShowConfirmDialog(false);
+    setConfirmingUser(null);
+    setSelectedTrackInfo(null);
+  };
+
+  const handleConfirmTrack = async () => {
+    if (!phase_id || !selectedTrackInfo) {
       alert('曲が選択されていません');
       return;
     }
-
-    const { data: userBData, error: userBError } = await supabase
+    const userId = confirmingUser === 'A' ? userA : userB;
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('spotify_user_id')
-      .eq('spotify_user_id', userB)
+      .eq('spotify_user_id', userId)
       .single();
-
-    if (userBError || !userBData) {
-      alert('userBのspotify_user_id 取得失敗');
+    if (userError || !userData) {
+      alert(`${confirmingUser}のspotify_user_id 取得失敗`);
       return;
     }
-    const userBSpotifyId = userBData.spotify_user_id;
-
+    const spotifyId = userData.spotify_user_id;
     const { error: upError } = await supabase
       .from('phases')
       .update({
-        select_tracks: selectedTrack,
-        select_tracks_user_id: userBSpotifyId,
+        select_tracks: selectedTrackInfo.spotify_track_id,
+        select_tracks_user_id: spotifyId,
       })
       .eq('id', phase_id);
-
     if (upError) {
       console.error('phases update error:', upError);
       alert('曲の決定に失敗しました');
       return;
     }
+    setShowConfirmDialog(false);
+    setConfirmingUser(null);
+    setSelectedTrackInfo(null);
     alert('曲を決定しました');
     router.push({
       pathname: '/ipad/phaseA/player',
@@ -192,30 +168,46 @@ export default function PhasesPage() {
   // directionNum === 1 (ユーザーAが曲を選ぶ) の画面
   if (directionNum === 1) {
     return (
-      <TrackSelection
-        tracks={userATracks}
-        selectedTrack={selectedTrack}
-        onTrackSelect={setSelectedTrack}
-        onConfirm={handleSelectUserATracks}
-        phaseNumber={phaseNumbersNum}
-        showSearch={true}
-        layout="grid"
-      />
+      <>
+        <TrackSelection
+          tracks={userATracks}
+          selectedTrack={selectedTrack}
+          onTrackSelect={setSelectedTrack}
+          onConfirm={() => handleOpenConfirmDialog('A')}
+          phaseNumber={phaseNumbersNum}
+          showSearch={true}
+          layout="grid"
+        />
+        <ConfirmTrackDialog
+          open={showConfirmDialog}
+          onClose={handleCloseConfirmDialog}
+          onConfirm={handleConfirmTrack}
+          track={selectedTrackInfo}
+        />
+      </>
     );
   }
 
   // directionNum === 2 (ユーザーBが曲を選ぶ) の画面
   if (directionNum === 2) {
     return (
-      <TrackSelection
-        tracks={userBTracks}
-        selectedTrack={selectedTrack}
-        onTrackSelect={setSelectedTrack}
-        onConfirm={handleSelectUserBTracks}
-        phaseNumber={phaseNumbersNum}
-        showSearch={true}
-        layout="grid"
-      />
+      <>
+        <TrackSelection
+          tracks={userBTracks}
+          selectedTrack={selectedTrack}
+          onTrackSelect={setSelectedTrack}
+          onConfirm={() => handleOpenConfirmDialog('B')}
+          phaseNumber={phaseNumbersNum}
+          showSearch={true}
+          layout="grid"
+        />
+        <ConfirmTrackDialog
+          open={showConfirmDialog}
+          onClose={handleCloseConfirmDialog}
+          onConfirm={handleConfirmTrack}
+          track={selectedTrackInfo}
+        />
+      </>
     );
   }
 
