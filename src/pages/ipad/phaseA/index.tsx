@@ -125,6 +125,29 @@ export default function PhasesPage() {
       return;
     }
     const spotifyId = userData.spotify_user_id;
+
+    // logsテーブルへインサート
+    try {
+      const { error: logError } = await supabase
+        .from('logs')
+        .insert([
+          {
+            session_id: session_id,
+            phase_id: phase_id,
+            user_id: spotifyId,
+            recommended_tracks: null, // phaseAでは推奨曲リストがないのでnullや[]でOK
+            selected_track: selectedTrackInfo.spotify_track_id,
+          },
+        ]);
+      if (logError) {
+        throw logError;
+      }
+    } catch (err) {
+      console.error('Failed to insert logs:', err);
+      alert('ログの記録に失敗しました');
+      return;
+    }
+
     const { error: upError } = await supabase
       .from('phases')
       .update({
