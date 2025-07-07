@@ -1,6 +1,7 @@
 // src/pages/ipad/phaseB/dialog.tsx
 
 import PageTimer from '@/components/pageTimer';
+import useShowButtonAfterDelay from '@/hooks/useShowButtonAfterDelay';
 import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/router';
 
@@ -10,6 +11,8 @@ export default function DialogPage() {
 
   const phaseNum = phase_numbers ? Number(phase_numbers) : 1;
   const urlDirections = directions ? Number(directions) : 1;
+
+  const showButton = useShowButtonAfterDelay(5); // 10秒後に表示
 
   // 「次の画面へ戻る」ボタン押下時
   // 質問文で「router.push で index.tsxへ戻る」とある想定
@@ -22,7 +25,7 @@ export default function DialogPage() {
     if (urlDirections === 1) {
       try {
         const { data: phasesData, error: phasesError } = await supabase
-          .from('phases2')
+          .from('phases')
           .insert([
             {
               session_id: session_id,
@@ -59,7 +62,7 @@ export default function DialogPage() {
       newPhaseNum = phaseNum + 1;
 
       const { data: phasesData, error: phasesError } = await supabase
-        .from('phases2')
+        .from('phases')
         .insert([
           {
             session_id: session_id,
@@ -99,12 +102,14 @@ export default function DialogPage() {
           <h1 className="text-3xl font-bold mb-6">対話をしてください</h1>
           <PageTimer />
           <div className="mt-6">
-            <button
-              onClick={handleNext}
-              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
-            >
-              後攻のユーザーの曲選択画面に移動する
-            </button>
+            {showButton && (
+              <button
+                onClick={handleNext}
+                className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+              >
+                後攻のユーザーの曲選択画面に移動する
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -118,12 +123,14 @@ export default function DialogPage() {
           <h1 className="text-3xl font-bold mb-6">対話をしてください</h1>
           <PageTimer />
           <div className="mt-6">
-            <button
-              onClick={handleNext}
-              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
-            >
-              評価に移る
-            </button>
+            {showButton && (
+              <button
+                onClick={handleNext}
+                className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+              >
+                評価に移る
+              </button>
+            )}
           </div>
         </div>
       </div>

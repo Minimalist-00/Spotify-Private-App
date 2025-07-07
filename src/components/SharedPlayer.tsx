@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 // ここでタイマーHookをインポート
 import PageTimer from '@/components/pageTimer';
-import usePageTimer from '@/hooks/usePageTimer';
+import useShowButtonAfterDelay from '@/hooks/useShowButtonAfterDelay';
 
 // 設定値
 const DIALOGUE_BUTTON_DELAY_SECONDS = 60;
@@ -55,12 +55,6 @@ export default function SharedPlayer({
   const [trackArtists, setTrackArtists] = useState<string>('');
   const [albumImage, setAlbumImage] = useState<string>('');
 
-  // xx秒経過後にボタンを表示するためのフラグ
-  const [showDialogueButton, setShowDialogueButton] = useState<boolean>(false);
-
-  // ページ滞在時間（秒）
-  const elapsedTime = usePageTimer();
-
   // 1) 認証チェック（未認証なら signIn）
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -73,7 +67,7 @@ export default function SharedPlayer({
     if (!phase_id) return;
     const fetchPhase = async () => {
       const { data, error } = await supabase
-        .from('phases2')
+        .from('phases')
         .select('select_tracks')
         .eq('id', phase_id)
         .single();
@@ -129,12 +123,7 @@ export default function SharedPlayer({
     });
   };
 
-  // ページに滞在してxx秒以上経過したらボタンを表示
-  useEffect(() => {
-    if (elapsedTime >= dialogueButtonDelay && !showDialogueButton) {
-      setShowDialogueButton(true);
-    }
-  }, [elapsedTime, showDialogueButton, dialogueButtonDelay]);
+  const showDialogueButton = useShowButtonAfterDelay(dialogueButtonDelay);
 
   if (status === 'loading') {
     return <div>Loading...</div>;

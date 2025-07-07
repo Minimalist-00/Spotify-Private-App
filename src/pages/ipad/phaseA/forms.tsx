@@ -1,11 +1,13 @@
 // src/pages/ipad/phaseA/forms.tsx
 
 import PageTimer from '@/components/pageTimer';
+import useShowButtonAfterDelay from '@/hooks/useShowButtonAfterDelay';
 import { useRouter } from 'next/router';
 
 export default function FormsPage() {
   const router = useRouter();
   const { session_id, phase_id, phase_numbers, directions } = router.query;
+  const showButton = useShowButtonAfterDelay(5); // 10秒後に表示
 
   // 「次のフェーズに移動する」ボタン押下時
   const handleNextPhase = () => {
@@ -33,12 +35,14 @@ export default function FormsPage() {
         {/* 例： <iframe src="..." ... /> */}
 
         <div className="mt-6">
-          <button
-            onClick={handleNextPhase}
-            className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
-          >
-            先攻のユーザーの曲選択画面に移動する
-          </button>
+          {showButton && (
+            <button
+              onClick={handleNextPhase}
+              className="px-6 py-3 bg-purple-600 text-white text-xl rounded hover:bg-purple-700"
+            >
+              先攻のユーザーの曲選択画面に移動する
+            </button>
+          )}
         </div>
       </div>
     </div>

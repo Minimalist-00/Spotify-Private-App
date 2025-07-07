@@ -59,7 +59,7 @@ export default function PhasesPage() {
 
     const fetchSessionUsers = async () => {
       const { data, error } = await supabase
-        .from('sessions2')
+        .from('sessions')
         .select('user_a, user_b')
         .eq('id', session_id)
         .single();
@@ -81,7 +81,7 @@ export default function PhasesPage() {
   const fetchAlreadySelectedTrackIds = useCallback(async () => {
     // phasesテーブルの select_tracks_user_id が該当ユーザーになっている行の select_tracks を収集
     const { data, error } = await supabase
-      .from('phases2')
+      .from('phases')
       .select('select_tracks')
       .eq('session_id', session_id)
 
@@ -112,7 +112,7 @@ export default function PhasesPage() {
       const alreadySelectedTrackIds = await fetchAlreadySelectedTrackIds();
 
       const { data: allTracks, error } = await supabase
-        .from('track2')
+        .from('tracks')
         .select('*')
         .eq('user_id', userId)
         .neq('self_disclosure_level', 0);
@@ -184,7 +184,7 @@ export default function PhasesPage() {
     // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
-        .from('logs2')
+        .from('logs')
         .insert([
           {
             session_id: session_id,
@@ -206,7 +206,7 @@ export default function PhasesPage() {
 
     // phasesテーブル更新
     const { error } = await supabase
-      .from('phases2')
+      .from('phases')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userASpotifyId,
@@ -247,7 +247,7 @@ export default function PhasesPage() {
     // logsテーブルへインサート
     try {
       const { error: logError } = await supabase
-        .from('logs2')
+        .from('logs')
         .insert([
           {
             session_id: session_id,
@@ -269,7 +269,7 @@ export default function PhasesPage() {
 
     // phasesテーブル更新
     const { error } = await supabase
-      .from('phases2')
+      .from('phases')
       .update({
         select_tracks: selectedTrack,
         select_tracks_user_id: userBSpotifyId,

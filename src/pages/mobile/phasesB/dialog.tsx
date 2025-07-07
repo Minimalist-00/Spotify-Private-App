@@ -1,8 +1,8 @@
 // pages/phases/dialog.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 export default function DialogPage() {
   const router = useRouter();
@@ -10,17 +10,17 @@ export default function DialogPage() {
 
   const [sessionDirections, setSessionDirections] = useState<number | null>(null);
 
-  // 1) DBの sessions2.directions を取得
+  // 1) DBの sessions.directions を取得
   useEffect(() => {
     if (!session_id) return;
     const fetchSessionDirections = async () => {
       const { data, error } = await supabase
-        .from('sessions2')
+        .from('sessions')
         .select('directions')
         .eq('id', session_id)
         .single();
       if (error || !data) {
-        console.error('Failed to fetch sessions2.directions', error);
+        console.error('Failed to fetch sessions.directions', error);
         return;
       }
       setSessionDirections(data.directions);
@@ -41,10 +41,10 @@ export default function DialogPage() {
     const newDirections = urlDirections === 1 ? 0 : 1; // 反転
     let newPhaseNum = phaseNum;                     // デフォルトは変更なし
 
-    if (sessionDirections !== urlDirections ) {
+    if (sessionDirections !== urlDirections) {
       // DBのdirections と URL のdirections が違う → 2) の処理
       newPhaseNum = phaseNum + 1;
-      
+
       try {
         if (newPhaseNum !== 9) {
           const { data: phasesData, error: phasesError } = await supabase
@@ -65,7 +65,7 @@ export default function DialogPage() {
             alert('phasesレコードが作れませんでした');
             return;
           }
-    
+
           const newPhase = phasesData[0];
           console.log('Created phase:', newPhase);
 
@@ -78,7 +78,7 @@ export default function DialogPage() {
               directions: newDirections,
             },
           });
-        }else {
+        } else {
           router.push({
             pathname: '/phasesB', // index.tsx
             query: {
@@ -89,7 +89,7 @@ export default function DialogPage() {
       } catch (err) {
         console.error('handleCreateSession error:', err);
       }
-    }else{
+    } else {
       // session_id, phase_id は変えず
       router.push({
         pathname: '/phasesB', // index.tsx

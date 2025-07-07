@@ -13,8 +13,8 @@ type UserData = {
 export default function NewSessionPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
-  const [userA, setUserA] = useState('');       // sessions2.user_a
-  const [userB, setUserB] = useState('');       // sessions2.user_b
+  const [userA, setUserA] = useState('');       // sessions.user_a
+  const [userB, setUserB] = useState('');       // sessions.user_b
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -32,9 +32,9 @@ export default function NewSessionPage() {
 
   const handleCreateSession = async () => {
     try {
-      // 1) sessions2に INSERT
-      const { data: sessions2Data, error: sessions2Error } = await supabase
-        .from('sessions2')
+      // 1) sessionsに INSERT
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
         .insert([
           {
             user_a: userA,
@@ -44,21 +44,21 @@ export default function NewSessionPage() {
         ])
         .select(); // returning
 
-      if (sessions2Error) {
-        console.error('Error inserting into sessions2:', sessions2Error);
+      if (sessionsError) {
+        console.error('Error inserting into sessions:', sessionsError);
         alert('セッション作成に失敗しました');
         return;
       }
-      if (!sessions2Data || sessions2Data.length === 0) {
+      if (!sessionsData || sessionsData.length === 0) {
         alert('セッション作成に失敗しました(データなし)');
         return;
       }
-      const newSession = sessions2Data[0];
+      const newSession = sessionsData[0];
       console.log('Created session:', newSession);
 
       // 2) phasesに INSERT (session_id & directions=1)
       const { data: phasesData, error: phasesError } = await supabase
-        .from('phases2')
+        .from('phases')
         .insert([
           {
             session_id: newSession.id,

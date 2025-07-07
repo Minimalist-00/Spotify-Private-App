@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
-import Link from 'next/link';
 import Image from 'next/image'; // next/imageを使用
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 type TrackData = {
   spotify_track_id: string;
@@ -30,7 +30,7 @@ export default function PhasesPage() {
 
     const fetchSessionUsers = async () => {
       const { data, error } = await supabase
-        .from('sessions2')
+        .from('sessions')
         .select('user_a')
         .eq('id', session_id)
         .single();
@@ -170,9 +170,8 @@ export default function PhasesPage() {
             {tracks.map((track) => (
               <div
                 key={track.spotify_track_id}
-                className={`relative flex border rounded-lg p-4 shadow ${
-                  selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'
-                }`}
+                className={`relative flex border rounded-lg p-4 shadow ${selectedTrack === track.spotify_track_id ? 'border-green-500' : 'border-gray-300'
+                  }`}
                 onClick={() => setSelectedTrack(track.spotify_track_id)}
               >
                 {track.image_url && (

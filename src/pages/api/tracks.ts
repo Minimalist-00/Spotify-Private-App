@@ -1,5 +1,5 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/utils/supabaseClient';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 // 受け取るデータの型
 type TrackUpdateData = {
@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // DBから関連するtracksデータをfetch
       const { data: trackData, error: fetchError } = await supabase
-        .from('track2')
+        .from('tracks')
         .select('spotify_track_id, popularity') // 必要なカラムだけ取得
         .in('spotify_track_id', spotifyTrackIds);
 
@@ -85,7 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Supabaseの upsert で一括保存
       const { data, error } = await supabase
-        .from('track2')
+        .from('tracks')
         .upsert(updatesWithDisclosure, {
           onConflict: 'spotify_track_id, user_id',
         });

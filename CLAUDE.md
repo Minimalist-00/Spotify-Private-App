@@ -85,8 +85,8 @@ Key authentication files:
 Main Supabase tables:
 
 - `users`: User profile information
-- `track2`: Track metadata with classification data
-- `sessions2`: User session management
+- `tracks`: Track metadata with classification data
+- `sessions`: User session management
 - `phases`: Phase-based interaction tracking
 
 ### Data Processing Algorithm
